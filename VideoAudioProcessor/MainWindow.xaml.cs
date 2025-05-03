@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System.Configuration;
+using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
-using System.Configuration;
 using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace VideoAudioProcessor;
@@ -12,27 +14,39 @@ namespace VideoAudioProcessor;
 public partial class MainWindow : Window
 {
     private static string QueuePath => Path.Combine(RootPath, "TrackManager", "Queue");
-    
+    private static string ProcessedPath => Path.Combine(RootPath, "TrackManager", "Processed");
+
     private static string RootPath
     {
-        get => ConfigurationManager.AppSettings["RootPath"]!;
+        get => ConfigurationManager.AppSettings["RootPath"] ?? string.Empty;
         set
         {
             var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            config.AppSettings.Settings["RootPath"].Value = value;
+            var settings = config.AppSettings.Settings;
+            if (settings["RootPath"] == null)
+            {
+                settings.Add("RootPath", value);
+            }
+            else
+            {
+                settings["RootPath"].Value = value;
+            }
+
             config.Save(ConfigurationSaveMode.Modified);
             ConfigurationManager.RefreshSection("appSettings");
         }
     }
-    
+
     public MainWindow()
     {
         InitializeComponent();
+        InitializePreviewTimer();
         InitializeProgressTimer();
+        InitializeProcessedTimer();
         VolumeSlider.Value = 0.5;
     }
 
-    private void LoadFile_Click(object sender, RoutedEventArgs e)
+    private async void LoadFile_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(RootPath))
         {
@@ -47,6 +61,7 @@ public partial class MainWindow : Window
             {
                 RootPath = dialog.FileName;
             }
+
             return;
         }
 
@@ -56,18 +71,52 @@ public partial class MainWindow : Window
             Multiselect = false
         };
 
-        if (openFileDialog.ShowDialog() != true) return;
+        if (openFileDialog.ShowDialog() != true)
+        {
+            return;
+        }
+
         try
         {
-            Directory.CreateDirectory(QueuePath);
-            var destinationPath = Path.Combine(QueuePath, Path.GetFileName(openFileDialog.FileName));
-            File.Copy(openFileDialog.FileName, destinationPath, true);
-            MessageBox.Show($"Файл сохранен: {destinationPath}", "Успешно", MessageBoxButton.OK, MessageBoxImage.Information);
+            string destinationPath = string.Empty;
+
+            await RunWithWaitDialogAsync("Загрузка", "Файл загружается...", async () =>
+            {
+                await Task.Run(() =>
+                {
+                    Directory.CreateDirectory(QueuePath);
+                    destinationPath = GetUniqueQueueFilePath(Path.GetFileName(openFileDialog.FileName));
+
+                    // Сохраняем файл в исходном виде без каких-либо изменений.
+                    File.Copy(openFileDialog.FileName, destinationPath, false);
+                });
+            });
+
+            RefreshFileList();
+            MessageBox.Show($"Файл сохранен: {destinationPath}", "Успешно", MessageBoxButton.OK,
+                MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при загрузке файла: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Ошибка при загрузке файла: {ex.Message}", "Ошибка", MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
+    }
+
+    private string GetUniqueQueueFilePath(string originalFileName)
+    {
+        var baseName = Path.GetFileNameWithoutExtension(originalFileName);
+        var extension = Path.GetExtension(originalFileName);
+        var candidateName = originalFileName;
+        var version = 1;
+
+        while (File.Exists(Path.Combine(QueuePath, candidateName)))
+        {
+            candidateName = $"{baseName}({version}){extension}";
+            version++;
+        }
+
+        return Path.Combine(QueuePath, candidateName);
     }
 
     private void ShowQueue_Click(object sender, RoutedEventArgs e)
@@ -101,21 +150,74 @@ public partial class MainWindow : Window
             return;
         }
 
-        var processedPath = Path.Combine(RootPath, "TrackManager", "Processed");
-        if (Directory.Exists(processedPath))
+        if (!Directory.Exists(ProcessedPath))
         {
-            System.Diagnostics.Process.Start("explorer.exe", processedPath);
+            MessageBox.Show("Папка обработанных файлов не существует", "Информация", MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
         }
-        else
-        {
-            MessageBox.Show("Папка обработанных файлов не существует", "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
+
+        RefreshProcessedList();
+        HideAllScreens();
+        ProcessedScreen.Visibility = Visibility.Visible;
     }
 
+    private void ShowAbout_Click(object sender, RoutedEventArgs e)
+    {
+        HideAllScreens();
+        StartScreen.Visibility = Visibility.Visible;
+    }
     private void HideAllScreens()
     {
         StartScreen.Visibility = Visibility.Collapsed;
         QueueScreen.Visibility = Visibility.Collapsed;
+        ProcessedScreen.Visibility = Visibility.Collapsed;
         ProcessScreen.Visibility = Visibility.Collapsed;
+        ProjectListScreen.Visibility = Visibility.Collapsed;
+        ProjectEditorScreen.Visibility = Visibility.Collapsed;
+    }
+
+    private async Task RunWithWaitDialogAsync(string title, string message, Func<Task> action)
+    {
+        var waitingWindow = new Window
+        {
+            Title = title,
+            Width = 320,
+            Height = 140,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            WindowStyle = WindowStyle.ToolWindow,
+            Owner = this,
+            Content = new Grid
+            {
+                Margin = new Thickness(16),
+                Children =
+                {
+                    new TextBlock
+                    {
+                        Text = message,
+                        Foreground = System.Windows.Media.Brushes.White,
+                        TextAlignment = TextAlignment.Center,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        TextWrapping = TextWrapping.Wrap
+                    }
+                }
+            },
+            Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#FF1E1E1E")!
+        };
+
+        waitingWindow.Show();
+        await Task.Yield();
+
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            waitingWindow.Close();
+        }
     }
 }
+
+

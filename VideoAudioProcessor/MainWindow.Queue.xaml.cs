@@ -1,4 +1,5 @@
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -8,6 +9,7 @@ namespace VideoAudioProcessor;
 public partial class MainWindow : Window
 {
     private DispatcherTimer _progressTimer;
+    private bool _isUpdatingQueueProgress;
     
     private void FilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -17,7 +19,7 @@ public partial class MainWindow : Window
         
         try
         {
-            MediaPlayer.Source = new Uri(selectedFile);
+            MediaPlayer.Source = new Uri(selectedFile, UriKind.Absolute);
             PlayerStatus.Visibility = Visibility.Collapsed;
             MediaPlayer.Play();
             _progressTimer.Start();
@@ -29,7 +31,7 @@ public partial class MainWindow : Window
         }
     }
     
-    private void DeleteFile_Click(object sender, RoutedEventArgs e)
+    private async void DeleteFile_Click(object sender, RoutedEventArgs e)
     {
         if (FilesListBox.SelectedItem == null) return;
     
@@ -44,8 +46,17 @@ public partial class MainWindow : Window
         {
             try
             {
-                File.Delete(selectedFile);
-                // Обновляем список файлов
+                await RunWithWaitDialogAsync("Удаление", "Файл удаляется...", async () =>
+                {
+                    await Task.Run(() =>
+                    {
+                        if (File.Exists(selectedFile))
+                        {
+                            File.Delete(selectedFile);
+                        }
+                    });
+                });
+
                 RefreshFileList();
             }
             catch (Exception ex)
@@ -82,8 +93,15 @@ public partial class MainWindow : Window
     
         try
         {
-            ProcessMediaPlayer.Source = new Uri(selectedFile);
-            ProcessMediaPlayer.Play();
+            _progressTimer.Stop();
+            MediaPlayer.Pause();
+
+            _previewTimer.Stop();
+            PreviewMediaPlayer.Stop();
+            PreviewMediaPlayer.Source = new Uri(selectedFile, UriKind.Absolute);
+            PreviewSlider.Value = 0;
+            PreviewCurrentTime.Text = "00:00";
+            PreviewTotalTime.Text = "00:00";
         
             // Переключаемся на экран обработки
             HideAllScreens();
@@ -100,15 +118,19 @@ public partial class MainWindow : Window
     
     private void InitializeProgressTimer()
     {
-        _progressTimer = new DispatcherTimer();
-        _progressTimer.Interval = TimeSpan.FromMilliseconds(200);
+        _progressTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(200)
+        };
         _progressTimer.Tick += ProgressTimer_Tick;
     }
 
     private void ProgressTimer_Tick(object sender, EventArgs e)
     {
         if (!MediaPlayer.NaturalDuration.HasTimeSpan || MediaPlayer.Source == null) return;
+        _isUpdatingQueueProgress = true;
         ProgressSlider.Value = MediaPlayer.Position.TotalSeconds / MediaPlayer.NaturalDuration.TimeSpan.TotalSeconds * 100;
+        _isUpdatingQueueProgress = false;
         CurrentTimeText.Text = MediaPlayer.Position.ToString(@"mm\:ss");
     }
     
@@ -130,8 +152,7 @@ public partial class MainWindow : Window
 
     private void ProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (MediaPlayer.Source == null || !MediaPlayer.NaturalDuration.HasTimeSpan) return;
-        // Всегда обновляем позицию, а не только при перетаскивании
+        if (_isUpdatingQueueProgress || MediaPlayer.Source == null || !MediaPlayer.NaturalDuration.HasTimeSpan) return;
         var newPosition = TimeSpan.FromSeconds(ProgressSlider.Value / 100 * 
                                                MediaPlayer.NaturalDuration.TimeSpan.TotalSeconds);
         MediaPlayer.Position = newPosition;

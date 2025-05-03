@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VideoAudioProcessor"
         mc:Ignorable="d"
-        Title="Audio Track Manager" Height="600" Width="900"
+        Title="Video Audio Processor" Height="600" Width="900"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style TargetType="Button">
@@ -86,25 +86,77 @@
                     <MenuItem Header="В очереди" Click="ShowQueue_Click"/>
                     <MenuItem Header="Обработанные" Click="ShowProcessed_Click"/>
                 </MenuItem>
+
+                <!-- Меню Проекты -->
+                <MenuItem Header="Проекты" Click="ShowVideoCollageProjects_Click"/>
+
+                <!-- О приложении -->
+                <MenuItem Header="О приложении" Click="ShowAbout_Click"/>
             </Menu>
             
             <!-- Основное содержимое -->
             <Grid x:Name="MainContent">
                 <!-- Стартовый экран -->
                 <Grid x:Name="StartScreen" Visibility="Visible">
-                    <TextBlock Text="Добро пожаловать в Audio Track Manager" 
-                               HorizontalAlignment="Center" 
-                               VerticalAlignment="Center"
-                               Foreground="White"
-                               FontSize="16"/>
-                    <TextBlock x:Name="RootPathText" Text="" 
-                               HorizontalAlignment="Left" 
-                               VerticalAlignment="Bottom"
-                               Foreground="LightGray"
-                               FontSize="10"
-                               Margin="5"/>
+                    <Border Margin="20" Padding="16" Background="#FF252526" BorderBrush="#FF3F3F46" BorderThickness="1">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="Video Audio Processor" Foreground="White" FontSize="22" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <TextBlock Text="Инструкция по использованию" Foreground="LightGray" FontSize="14" Margin="0,0,0,16"/>
+
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    Это приложение помогает хранить медиафайлы, обрабатывать их через FFmpeg и собирать видеопроекты с таймлайном.
+                                    После запуска по умолчанию открывается эта страница.
+                                </TextBlock>
+
+                                <TextBlock Text="1) Подготовка перед работой" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Убедитесь, что на компьютере установлен FFmpeg (команды ffmpeg и ffprobe доступны в системе).&#10;
+                                    • Нажмите «Файл» -> «Загрузить», выберите корневую папку проекта, затем выберите медиафайл для добавления в очередь.&#10;
+                                    • Файлы сохраняются в структуру TrackManager внутри выбранной корневой папки.
+                                </TextBlock>
+
+                                <TextBlock Text="2) Работа с треками" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • «Треки» -> «В очереди»: список исходных файлов. Можно просматривать, удалять и отправлять файл в обработку.&#10;
+                                    • «Треки» -> «Обработанные»: список уже обработанных файлов. Можно воспроизводить, удалить или вернуть файл в очередь.
+                                </TextBlock>
+
+                                <TextBlock Text="3) Обработка файла (экран «Выполнить»)" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Выберите формат вывода: MP4, AVI или MKV.&#10;
+                                    • При необходимости задайте обрезку по времени (начало и конец).&#10;
+                                    • Укажите имя выходного файла.&#10;
+                                    • Включайте дополнительные функции только при необходимости: VP9, 2-pass, ускоренное кодирование, изменение FPS, извлечение аудио, обрезка/масштаб и т.д.&#10;
+                                    • Для опытных пользователей доступно поле ручной команды FFmpeg с шаблонами {input} и {output}.
+                                </TextBlock>
+
+                                <TextBlock Text="4) Проекты (медиаколлажи)" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Откройте раздел «Проекты», создайте новый проект и задайте имя.&#10;
+                                    • Добавляйте видео/фото на таймлайн: из базы треков или напрямую с компьютера.&#10;
+                                    • Добавляйте аудиодорожки: из базы или с компьютера, можно очистить и выбрать заново.&#10;
+                                    • Настройте формат, разрешение и другие параметры проекта.&#10;
+                                    • Нажмите «Сохранить» для рендера готового результата в обработанные файлы.
+                                </TextBlock>
+
+                                <TextBlock Text="5) Практические рекомендации" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Для быстрых тестов используйте небольшие файлы и короткие фрагменты.&#10;
+                                    • Если рендер не запускается, проверьте путь к корневой папке и наличие ffmpeg/ffprobe в PATH.&#10;
+                                    • Если файл уже существует в целевой папке, используйте другое имя, чтобы избежать конфликта.
+                                </TextBlock>
+
+                                <TextBlock Text="Навигация" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap">
+                                    • Вкладка «О приложении» всегда возвращает вас на эту инструкцию.&#10;
+                                    • Кнопка «Назад» в разделе проектов также возвращает на этот экран.
+                                </TextBlock>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
                 </Grid>
-                
+
                 <!-- Экран очереди -->
                 <Grid x:Name="QueueScreen" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
@@ -174,26 +226,379 @@
                                    Foreground="White" TextWrapping="Wrap"/>
                     </Grid>
                 </Grid>
-                
-                <!-- Добавляем новый Grid для экрана обработки -->
-                <Grid x:Name="ProcessScreen" Visibility="Collapsed">
+
+                <!-- Экран обработанных файлов -->
+                <Grid x:Name="ProcessedScreen" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="5"/>
+                        <ColumnDefinition Width="2*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Список обработанных файлов -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <ListBox x:Name="ProcessedListBox" Grid.Row="0"
+                                 SelectionChanged="ProcessedListBox_SelectionChanged"
+                                 PreviewMouseRightButtonDown="ListBoxItem_PreviewMouseRightButtonDown">
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="В очередь" Click="SendToQueueButton_Click"/>
+                                    <MenuItem Header="Удалить" Click="DeleteProcessedFile_Click"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                        </ListBox>
+                    </Grid>
+
+                    <!-- Разделитель -->
+                    <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch"/>
+
+                    <!-- Проигрыватель -->
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <MediaElement x:Name="ProcessedMediaPlayer" Grid.Row="0"
+                                      LoadedBehavior="Manual"
+                                      UnloadedBehavior="Stop"
+                                      Stretch="Uniform"
+                                      MediaOpened="ProcessedMediaPlayer_MediaOpened"
+                                      MediaEnded="ProcessedMediaPlayer_MediaEnded"/>
+
+                        <Slider x:Name="ProcessedProgressSlider" Grid.Row="1"
+                                ValueChanged="ProcessedProgressSlider_ValueChanged"
+                                IsMoveToPointEnabled="True"/>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock x:Name="ProcessedCurrentTimeText" Text="00:00" Foreground="White" Margin="5"/>
+                            <TextBlock Text="/" Foreground="White" Margin="5"/>
+                            <TextBlock x:Name="ProcessedTotalTimeText" Text="00:00" Foreground="White" Margin="5"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+                            <Button Content="▶" Width="40" Click="ProcessedPlayButton_Click"/>
+                            <Button Content="⏸" Width="40" Click="ProcessedPauseButton_Click" Margin="5,0"/>
+                            <Button Content="⏹" Width="40" Click="ProcessedStopButton_Click"/>
+                        </StackPanel>
+
+                        <TextBlock x:Name="ProcessedPlayerStatus" Grid.Row="0" Grid.RowSpan="4"
+                                   Text="Выберите файл для воспроизведения"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Foreground="White" TextWrapping="Wrap"/>
+                    </Grid>
+                </Grid>
+
+                <!-- Экран списка проектов -->
+                <Grid x:Name="ProjectListScreen" Visibility="Collapsed">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <MediaElement x:Name="ProcessMediaPlayer" 
-                                  Grid.Row="0"
-                                  LoadedBehavior="Manual" 
-                                  UnloadedBehavior="Stop"
-                                  Stretch="Uniform"/>
+                    <StackPanel Grid.Row="0" Margin="20">
+                        <TextBlock x:Name="ProjectListTitle" Text="Проекты" Foreground="White" FontSize="16" Margin="0,0,0,10"/>
+                        <ListBox x:Name="ProjectsListBox" MouseDoubleClick="ProjectsListBox_MouseDoubleClick">
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Редактировать" Click="EditProject_Click"/>
+                                    <MenuItem Header="Удалить" Click="DeleteProject_Click"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                        </ListBox>
+                    </StackPanel>
 
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" 
-                                HorizontalAlignment="Center" VerticalAlignment="Center" 
-                                Margin="10"> 
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10">
+                        <Button Content="Создать новый проект" Click="CreateProject_Click" Width="200" Height="40"/>
+                        <Button Content="Назад" Click="BackToStart_Click" Width="120" Height="40" Margin="10,0,0,0"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Экран формы создания проекта -->
+                <Grid x:Name="ProjectEditorScreen" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/>
+                        <ColumnDefinition Width="2*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Margin="20">
+                        <TextBlock x:Name="ProjectEditorTitle" Text="Проект" Foreground="White" FontSize="16" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                            <TextBlock Text="Название проекта:" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBox x:Name="ProjectNameTextBox" Width="260"/>
+                            <Button Content="Переименовать" Click="RenameProject_Click" Width="140" Margin="10,0,0,0"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Таймлайн (время)" Foreground="White" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <Border Background="#FF2A2A2A" BorderBrush="#FF3F3F46" BorderThickness="1" Padding="8" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock x:Name="TimelineScaleText" Text="0 сек" Foreground="LightGray" Margin="0,0,0,6"/>
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Видео / фото дорожка" Foreground="White" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="#FF4A4A4A" Padding="4" Background="#FF1F1F1F">
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                            <StackPanel x:Name="VideoTimelinePanel" Orientation="Horizontal"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Grid>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Аудио дорожка" Foreground="White" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="#FF4A4A4A" Padding="4" Background="#FF1F1F1F">
+                                        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                                            <StackPanel x:Name="AudioTimelinePanel" Orientation="Horizontal"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+                        <ListBox x:Name="TimelineItemsListBox" Height="170" DisplayMemberPath="DisplayName"
+                                 PreviewMouseRightButtonDown="ListBoxItem_PreviewMouseRightButtonDown">
+                            <ListBox.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Изменить длительность" Click="EditTimelineItemDuration_Click"/>
+                                    <MenuItem Header="Удалить из таймлайна" Click="RemoveTimelineItem_Click"/>
+                                </ContextMenu>
+                            </ListBox.ContextMenu>
+                        </ListBox>
+
+                        <WrapPanel Margin="0,10,0,0">
+                            <Button Content="Видео из базы" Click="AddVideoFromBase_Click" Width="150"/>
+                            <Button Content="Видео с компьютера" Click="AddVideoFromComputer_Click" Width="180" Margin="10,0,0,0"/>
+                            <Button Content="Фото с компьютера" Click="AddImageFromComputer_Click" Width="180" Margin="10,0,0,0"/>
+                        </WrapPanel>
+
+                        <TextBlock Text="Аудио" Foreground="White" FontWeight="Bold" Margin="0,20,0,5"/>
+                        <TextBlock x:Name="SelectedAudioText" Text="Аудио не добавлено" Foreground="LightGray" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Добавить аудио из базы" Click="SelectAudioFromBase_Click" Width="170"/>
+                            <Button Content="Добавить аудио с компьютера" Click="SelectAudioFromComputer_Click" Width="200" Margin="10,0,0,0"/>
+                            <Button Content="Очистить аудио" Click="ClearAudio_Click" Width="130" Margin="10,0,0,0"/>
+                        </StackPanel>
+                        <TextBlock Text="Аудио воспроизводится по очереди, с плавным входом/затуханием у каждого трека" Foreground="LightGray" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+                        <CheckBox x:Name="UseVideoAudioCheckBox" Content="Использовать аудио из видео" Foreground="White" Margin="0,15,0,0" Checked="UseVideoAudioCheckBox_Changed" Unchecked="UseVideoAudioCheckBox_Changed"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="20">
+                        <TextBlock Text="Настройки проекта" Foreground="White" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Формат вывода" Foreground="White"/>
+                        <ComboBox x:Name="ProjectOutputFormatComboBox" Margin="0,5,0,15">
+                            <ComboBoxItem Content="mp4"/>
+                            <ComboBoxItem Content="mkv"/>
+                            <ComboBoxItem Content="avi"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Разрешение (Ш x В)" Foreground="White"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,15">
+                            <TextBox x:Name="ProjectWidthTextBox" Width="80" Text="1920"/>
+                            <TextBlock Text="x" Foreground="White" Margin="5,0"/>
+                            <TextBox x:Name="ProjectHeightTextBox" Width="80" Text="1080"/>
+                        </StackPanel>
+
+                        <TextBlock x:Name="SlideDurationLabel" Text="Длительность слайда (сек.)" Foreground="White"/>
+                        <TextBox x:Name="SlideDurationTextBox" Width="80" Text="3" Margin="0,5,0,15"/>
+
+                        <Button x:Name="SaveProjectButton" Content="Сохранить" Click="SaveProjectVideo_Click" Height="40" Margin="0,20,0,0"/>
+                        <StackPanel x:Name="SaveProgressPanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,8,0,0">
+                            <ProgressBar IsIndeterminate="True" Width="120" Height="12"/>
+                            <TextBlock Text="Сохранение..." Foreground="LightGray" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <Button Content="Назад к списку" Click="BackToProjectList_Click" Height="35" Margin="0,10,0,0"/>
+                    </StackPanel>
+                </Grid>
+                
+                <!-- Добавляем новый Grid для экрана обработки -->
+                <Grid x:Name="ProcessScreen" Visibility="Collapsed">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3*"/> <!-- Плеер -->
+                        <ColumnDefinition Width="2*"/> <!-- Настройки -->
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Плеер с управлением -->
+                    <Grid Grid.Column="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <MediaElement x:Name="PreviewMediaPlayer" Grid.Row="0"
+                                      LoadedBehavior="Manual" UnloadedBehavior="Stop"
+                                      Stretch="Uniform"
+                                      MediaOpened="PreviewMediaPlayer_MediaOpened"
+                                      MediaEnded="PreviewMediaPlayer_MediaEnded"/>
+
+                        <Slider x:Name="PreviewSlider" Grid.Row="1" IsMoveToPointEnabled="True"
+                                ValueChanged="PreviewSlider_ValueChanged"/>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock x:Name="PreviewCurrentTime" Text="00:00" Foreground="White" Margin="5"/>
+                            <TextBlock Text="/" Foreground="White" Margin="5"/>
+                            <TextBlock x:Name="PreviewTotalTime" Text="00:00" Foreground="White" Margin="5"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+                            <Button Content="▶" Click="PreviewPlay_Click"/>
+                            <Button Content="⏸" Click="PreviewPause_Click" Margin="5,0"/>
+                            <Button Content="⏹" Click="PreviewStop_Click"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- Панель настроек -->
+                    <StackPanel Grid.Column="1" Margin="20">
+                        <!-- Ресурсы должны быть объявлены в начале элемента -->
+                        <StackPanel.Resources>
+                            <Style TargetType="CheckBox">
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Margin" Value="0,0,0,15"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="CheckBox">
+                                            <Grid>
+                                                <Border x:Name="border" Background="#333" CornerRadius="5" 
+                                                        BorderThickness="1" BorderBrush="#555" Padding="8,5">
+                                                    <ContentPresenter RecognizesAccessKey="True"/>
+                                                </Border>
+                                                <Path x:Name="checkMark" Data="M0,5 L5,10 L12,0" Stroke="White" 
+                                                      StrokeThickness="2" HorizontalAlignment="Right" Margin="0,0,10,0"
+                                                      Visibility="Collapsed"/>
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsChecked" Value="True">
+                                                    <Setter TargetName="checkMark" Property="Visibility" Value="Visible"/>
+                                                    <Setter TargetName="border" Property="Background" Value="#444"/>
+                                                </Trigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="border" Property="BorderBrush" Value="#777"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </StackPanel.Resources>
+
+                        <!-- Основные настройки -->
+                        <TextBlock Text="Формат вывода:" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+
+                        <StackPanel Margin="0,0,0,20">
+                            <RadioButton Content="MP4" GroupName="OutputFormat" Tag="mp4" Checked="OnOutputFormatChanged" 
+                                        Foreground="White" Margin="0,0,0,5"/>
+                            <RadioButton Content="AVI" GroupName="OutputFormat" Tag="avi" Checked="OnOutputFormatChanged" 
+                                        Foreground="White" Margin="0,0,0,5"/>
+                            <RadioButton Content="MKV" GroupName="OutputFormat" Tag="mkv" Checked="OnOutputFormatChanged" 
+                                        Foreground="White"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Обрезка:" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Начало:" Width="60" Foreground="White"/>
+                            <TextBox x:Name="TrimStartTextBox" Width="100" Text="00:00:00"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <TextBlock Text="Конец:" Width="60" Foreground="White"/>
+                            <TextBox x:Name="TrimEndTextBox" Width="100" Text="00:00:10"/>
+                        </StackPanel>
+                        
+                        <TextBlock Text="Название файла:" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+                        <TextBox x:Name="FileNameTextBox" Margin="0,0,0,20"/>
+                        
+                        <Button Content="Выполнить" Click="ExecuteProcessing_Click" Height="40" Width="120" 
+                                HorizontalAlignment="Center" Foreground="White" Margin="0,0,0,30"/>
+                        
+                        <!-- Дополнительные функции -->
+                        <TextBlock Text="Дополнительные функции:" FontWeight="Bold" Margin="0,0,0,15" Foreground="White" FontSize="16"/>
+                        
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="300" Margin="0,0,0,10">
+                            <StackPanel>
+                                <!-- VP9 -->
+                                <CheckBox Content="Базовое преобразование в VP9 (с контролем качества)" x:Name="Vp9CheckBox"/>
+                                <StackPanel Orientation="Horizontal" Margin="20,0,0,15">
+                                    <TextBlock Text="CRF (качество):" VerticalAlignment="Center" Foreground="White"/>
+                                    <TextBox x:Name="Vp9CrfTextBox" Width="50" Margin="10,0,0,0" Text="30"/>
+                                </StackPanel>
+
+                                <!-- 2-pass -->
+                                <CheckBox Content="Управление битрейтом (2-pass кодирование)" x:Name="TwoPassCheckBox"/>
+                                <StackPanel Orientation="Horizontal" Margin="20,0,0,15">
+                                    <TextBlock Text="Bitrate (например 1M):" VerticalAlignment="Center" Foreground="White"/>
+                                    <TextBox x:Name="TwoPassBitrateTextBox" Width="60" Margin="10,0,0,0" Text="1M"/>
+                                </StackPanel>
+
+                                <!-- Fast encode -->
+                                <CheckBox Content="Ускоренное кодирование (с потерей качества)" x:Name="FastCheckBox"/>
+
+                                <!-- Crop & Resize -->
+                                <CheckBox Content="Обрезка и изменение разрешения" x:Name="CropResizeCheckBox"/>
+                                <StackPanel Orientation="Horizontal" Margin="20,0,0,15">
+                                    <TextBlock Text="Crop (w:h:x:y):" VerticalAlignment="Center" Foreground="White"/>
+                                    <TextBox x:Name="CropTextBox" Width="100" Margin="10,0,0,0" Text="640:360:0:0"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="20,0,0,15">
+                                    <TextBlock Text="Scale (w:h):" VerticalAlignment="Center" Foreground="White"/>
+                                    <TextBox x:Name="ScaleTextBox" Width="100" Margin="10,0,0,0" Text="640:360"/>
+                                </StackPanel>
+
+                                <!-- Extract Opus -->
+                                <CheckBox Content="Извлечение аудио и конвертация в Opus" x:Name="ExtractOpusCheckBox"/>
+
+                                <!-- Alpha channel -->
+                                <CheckBox Content="Создание видео с прозрачностью (Alpha-канал)" x:Name="AlphaChannelCheckBox"/>
+
+                                <!-- FPS -->
+                                <CheckBox Content="Изменение FPS (частоты кадров)" x:Name="FpsChangeCheckBox"/>
+                                <StackPanel Orientation="Horizontal" Margin="20,0,0,15">
+                                    <TextBlock Text="FPS:" VerticalAlignment="Center" Foreground="White"/>
+                                    <TextBox x:Name="FpsTextBox" Width="50" Margin="10,0,0,0" Text="30" Foreground="White"/>
+                                </StackPanel>
+
+                                <!-- Remove audio -->
+                                <CheckBox Content="Удаление аудио" x:Name="RemoveAudioCheckBox"/>
+                            </StackPanel>
+                        </ScrollViewer>
+                        
+                        <!-- Ручной ввод команд FFmpeg -->
+                        <TextBlock Text="Ручной ввод команд FFmpeg:" FontWeight="Bold" Margin="0,20,0,10" Foreground="White" FontSize="16"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+    
+                            <!-- Поле для ввода команды -->
+                            <TextBox x:Name="CustomCommandTextBox" Grid.Column="0" 
+                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                     Height="100" Margin="0,0,10,0"
+                                     Text="-i &quot;{input}&quot; -c:v libx264 -c:a aac &quot;{output}&quot;"/>
+    
+                            <!-- Кнопка выполнения -->
+                            <Button Grid.Column="1" Content="Выполнить" Width="120" Height="30"
+                                    Click="ExecuteCustomCommand_Click" VerticalAlignment="Top"/>
+                        </Grid>
+
+                        <TextBlock Text="Подсказка: {input} будет заменено на путь к исходному файлу, {output} - на путь к выходному файлу" 
+                                   Foreground="LightGray" FontSize="11" Margin="0,5,0,15"/>
                     </StackPanel>
                 </Grid>
             </Grid>
         </DockPanel>
     </Grid>
 </Window>
+
