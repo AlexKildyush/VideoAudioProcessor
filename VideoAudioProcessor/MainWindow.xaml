@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:VideoAudioProcessor"
         mc:Ignorable="d"
-        Title="Audio Track Manager" Height="600" Width="900"
+        Title="Video Audio Processor" Height="600" Width="900"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
         <Style TargetType="Button">
@@ -89,25 +89,74 @@
 
                 <!-- Меню Проекты -->
                 <MenuItem Header="Проекты" Click="ShowVideoCollageProjects_Click"/>
+
+                <!-- О приложении -->
+                <MenuItem Header="О приложении" Click="ShowAbout_Click"/>
             </Menu>
             
             <!-- Основное содержимое -->
             <Grid x:Name="MainContent">
                 <!-- Стартовый экран -->
                 <Grid x:Name="StartScreen" Visibility="Visible">
-                    <TextBlock Text="Добро пожаловать в Audio Track Manager" 
-                               HorizontalAlignment="Center" 
-                               VerticalAlignment="Center"
-                               Foreground="White"
-                               FontSize="16"/>
-                    <TextBlock x:Name="RootPathText" Text="" 
-                               HorizontalAlignment="Left" 
-                               VerticalAlignment="Bottom"
-                               Foreground="LightGray"
-                               FontSize="10"
-                               Margin="5"/>
+                    <Border Margin="20" Padding="16" Background="#FF252526" BorderBrush="#FF3F3F46" BorderThickness="1">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <TextBlock Text="Video Audio Processor" Foreground="White" FontSize="22" FontWeight="Bold" Margin="0,0,0,8"/>
+                                <TextBlock Text="Инструкция по использованию" Foreground="LightGray" FontSize="14" Margin="0,0,0,16"/>
+
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    Это приложение помогает хранить медиафайлы, обрабатывать их через FFmpeg и собирать видеопроекты с таймлайном.
+                                    После запуска по умолчанию открывается эта страница.
+                                </TextBlock>
+
+                                <TextBlock Text="1) Подготовка перед работой" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Убедитесь, что на компьютере установлен FFmpeg (команды ffmpeg и ffprobe доступны в системе).&#10;
+                                    • Нажмите «Файл» -> «Загрузить», выберите корневую папку проекта, затем выберите медиафайл для добавления в очередь.&#10;
+                                    • Файлы сохраняются в структуру TrackManager внутри выбранной корневой папки.
+                                </TextBlock>
+
+                                <TextBlock Text="2) Работа с треками" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • «Треки» -> «В очереди»: список исходных файлов. Можно просматривать, удалять и отправлять файл в обработку.&#10;
+                                    • «Треки» -> «Обработанные»: список уже обработанных файлов. Можно воспроизводить, удалить или вернуть файл в очередь.
+                                </TextBlock>
+
+                                <TextBlock Text="3) Обработка файла (экран «Выполнить»)" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Выберите формат вывода: MP4, AVI или MKV.&#10;
+                                    • При необходимости задайте обрезку по времени (начало и конец).&#10;
+                                    • Укажите имя выходного файла.&#10;
+                                    • Включайте дополнительные функции только при необходимости: VP9, 2-pass, ускоренное кодирование, изменение FPS, извлечение аудио, обрезка/масштаб и т.д.&#10;
+                                    • Для опытных пользователей доступно поле ручной команды FFmpeg с шаблонами {input} и {output}.
+                                </TextBlock>
+
+                                <TextBlock Text="4) Проекты (медиаколлажи)" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Откройте раздел «Проекты», создайте новый проект и задайте имя.&#10;
+                                    • Добавляйте видео/фото на таймлайн: из базы треков или напрямую с компьютера.&#10;
+                                    • Добавляйте аудиодорожки: из базы или с компьютера, можно очистить и выбрать заново.&#10;
+                                    • Настройте формат, разрешение и другие параметры проекта.&#10;
+                                    • Нажмите «Сохранить» для рендера готового результата в обработанные файлы.
+                                </TextBlock>
+
+                                <TextBlock Text="5) Практические рекомендации" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Для быстрых тестов используйте небольшие файлы и короткие фрагменты.&#10;
+                                    • Если рендер не запускается, проверьте путь к корневой папке и наличие ffmpeg/ffprobe в PATH.&#10;
+                                    • Если файл уже существует в целевой папке, используйте другое имя, чтобы избежать конфликта.
+                                </TextBlock>
+
+                                <TextBlock Text="Навигация" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap">
+                                    • Вкладка «О приложении» всегда возвращает вас на эту инструкцию.&#10;
+                                    • Кнопка «Назад» в разделе проектов также возвращает на этот экран.
+                                </TextBlock>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Border>
                 </Grid>
-                
+
                 <!-- Экран очереди -->
                 <Grid x:Name="QueueScreen" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
@@ -552,3 +601,4 @@
         </DockPanel>
     </Grid>
 </Window>
+

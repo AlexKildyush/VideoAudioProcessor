@@ -162,6 +162,11 @@ public partial class MainWindow : Window
         ProcessedScreen.Visibility = Visibility.Visible;
     }
 
+    private void ShowAbout_Click(object sender, RoutedEventArgs e)
+    {
+        HideAllScreens();
+        StartScreen.Visibility = Visibility.Visible;
+    }
     private void HideAllScreens()
     {
         StartScreen.Visibility = Visibility.Collapsed;
@@ -214,3 +219,5 @@ public partial class MainWindow : Window
         }
     }
 }
+
+
