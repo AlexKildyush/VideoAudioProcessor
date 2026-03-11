@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,7 +10,7 @@ namespace VideoAudioProcessor;
 
 public partial class MainWindow : Window
 {
-    private DispatcherTimer _processedTimer;
+    private DispatcherTimer? _processedTimer;
     private bool _isUpdatingProcessedProgress;
 
     private void InitializeProcessedTimer()
@@ -46,7 +46,7 @@ public partial class MainWindow : Window
             ProcessedMediaPlayer.Source = new Uri(selectedFile, UriKind.Absolute);
             ProcessedPlayerStatus.Visibility = Visibility.Collapsed;
             ProcessedMediaPlayer.Play();
-            _processedTimer.Start();
+            _processedTimer?.Start();
         }
         catch (Exception ex)
         {
@@ -68,7 +68,7 @@ public partial class MainWindow : Window
         ProcessedMediaPlayer.Stop();
         ProcessedProgressSlider.Value = 0;
         ProcessedCurrentTimeText.Text = "00:00";
-        _processedTimer.Stop();
+        _processedTimer?.Stop();
     }
 
     private void ProcessedProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -84,20 +84,20 @@ public partial class MainWindow : Window
     {
         if (ProcessedMediaPlayer.Source == null) return;
         ProcessedMediaPlayer.Play();
-        _processedTimer.Start();
+        _processedTimer?.Start();
         ProcessedPlayerStatus.Visibility = Visibility.Collapsed;
     }
 
     private void ProcessedPauseButton_Click(object sender, RoutedEventArgs e)
     {
         ProcessedMediaPlayer.Pause();
-        _processedTimer.Stop();
+        _processedTimer?.Stop();
     }
 
     private void ProcessedStopButton_Click(object sender, RoutedEventArgs e)
     {
         ProcessedMediaPlayer.Stop();
-        _processedTimer.Stop();
+        _processedTimer?.Stop();
         ProcessedProgressSlider.Value = 0;
         ProcessedCurrentTimeText.Text = "00:00";
     }
@@ -129,7 +129,6 @@ public partial class MainWindow : Window
                 MessageBoxImage.Error);
         }
     }
-
 
     private async void DeleteProcessedFile_Click(object sender, RoutedEventArgs e)
     {

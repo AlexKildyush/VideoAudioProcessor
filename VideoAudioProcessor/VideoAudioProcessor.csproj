@@ -24,4 +24,9 @@
       </Compile>
     </ItemGroup>
 
+
+    <ItemGroup>
+      <Resource Include="Assets\Images\about-background.jpg" />
+    </ItemGroup>
 </Project>
+

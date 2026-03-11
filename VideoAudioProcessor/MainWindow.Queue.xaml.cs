@@ -1,5 +1,4 @@
-using System.IO;
-using System.Threading.Tasks;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -8,21 +7,24 @@ namespace VideoAudioProcessor;
 
 public partial class MainWindow : Window
 {
-    private DispatcherTimer _progressTimer;
+    private DispatcherTimer? _progressTimer;
     private bool _isUpdatingQueueProgress;
-    
+
     private void FilesListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (FilesListBox.SelectedItem == null) return;
+        if (FilesListBox.SelectedItem is not string selectedName)
+        {
+            return;
+        }
 
-        var selectedFile = Path.Combine(QueuePath, FilesListBox.SelectedItem.ToString()!);
-        
+        var selectedFile = Path.Combine(QueuePath, selectedName);
+
         try
         {
             MediaPlayer.Source = new Uri(selectedFile, UriKind.Absolute);
             PlayerStatus.Visibility = Visibility.Collapsed;
             MediaPlayer.Play();
-            _progressTimer.Start();
+            _progressTimer?.Start();
         }
         catch (Exception ex)
         {
@@ -30,18 +32,21 @@ public partial class MainWindow : Window
             PlayerStatus.Visibility = Visibility.Visible;
         }
     }
-    
+
     private async void DeleteFile_Click(object sender, RoutedEventArgs e)
     {
-        if (FilesListBox.SelectedItem == null) return;
-    
-        var selectedFile = Path.Combine(QueuePath, FilesListBox.SelectedItem.ToString());
-    
-        var result = MessageBox.Show($"Вы точно хотите удалить файл {FilesListBox.SelectedItem}?", 
-            "Подтверждение удаления", 
-            MessageBoxButton.YesNo, 
+        if (FilesListBox.SelectedItem is not string selectedName)
+        {
+            return;
+        }
+
+        var selectedFile = Path.Combine(QueuePath, selectedName);
+
+        var result = MessageBox.Show($"Вы точно хотите удалить файл {selectedName}?",
+            "Подтверждение удаления",
+            MessageBoxButton.YesNo,
             MessageBoxImage.Question);
-    
+
         if (result == MessageBoxResult.Yes)
         {
             try
@@ -61,14 +66,14 @@ public partial class MainWindow : Window
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка при удалении файла: {ex.Message}", 
-                    "Ошибка", 
-                    MessageBoxButton.OK, 
+                MessageBox.Show($"Ошибка при удалении файла: {ex.Message}",
+                    "Ошибка",
+                    MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
         }
     }
-     
+
     private void RefreshFileList()
     {
         if (!Directory.Exists(QueuePath))
@@ -84,38 +89,40 @@ public partial class MainWindow : Window
 
         FilesListBox.ItemsSource = files;
     }
-    
+
     private void ProcessFile_Click(object sender, RoutedEventArgs e)
     {
-        if (FilesListBox.SelectedItem == null) return;
-    
-        var selectedFile = Path.Combine(QueuePath, FilesListBox.SelectedItem.ToString());
-    
+        if (FilesListBox.SelectedItem is not string selectedName)
+        {
+            return;
+        }
+
+        var selectedFile = Path.Combine(QueuePath, selectedName);
+
         try
         {
-            _progressTimer.Stop();
+            _progressTimer?.Stop();
             MediaPlayer.Pause();
 
-            _previewTimer.Stop();
+            _previewTimer?.Stop();
             PreviewMediaPlayer.Stop();
             PreviewMediaPlayer.Source = new Uri(selectedFile, UriKind.Absolute);
             PreviewSlider.Value = 0;
             PreviewCurrentTime.Text = "00:00";
             PreviewTotalTime.Text = "00:00";
-        
-            // Переключаемся на экран обработки
+
             HideAllScreens();
             ProcessScreen.Visibility = Visibility.Visible;
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка при открытии файла: {ex.Message}", 
-                "Ошибка", 
-                MessageBoxButton.OK, 
+            MessageBox.Show($"Ошибка при открытии файла: {ex.Message}",
+                "Ошибка",
+                MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
     }
-    
+
     private void InitializeProgressTimer()
     {
         _progressTimer = new DispatcherTimer
@@ -125,7 +132,7 @@ public partial class MainWindow : Window
         _progressTimer.Tick += ProgressTimer_Tick;
     }
 
-    private void ProgressTimer_Tick(object sender, EventArgs e)
+    private void ProgressTimer_Tick(object? sender, EventArgs e)
     {
         if (!MediaPlayer.NaturalDuration.HasTimeSpan || MediaPlayer.Source == null) return;
         _isUpdatingQueueProgress = true;
@@ -133,7 +140,7 @@ public partial class MainWindow : Window
         _isUpdatingQueueProgress = false;
         CurrentTimeText.Text = MediaPlayer.Position.ToString(@"mm\:ss");
     }
-    
+
     private void MediaPlayer_MediaOpened(object sender, RoutedEventArgs e)
     {
         if (MediaPlayer.NaturalDuration.HasTimeSpan)
@@ -147,13 +154,13 @@ public partial class MainWindow : Window
         MediaPlayer.Stop();
         ProgressSlider.Value = 0;
         CurrentTimeText.Text = "00:00";
-        _progressTimer.Stop();
+        _progressTimer?.Stop();
     }
 
     private void ProgressSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (_isUpdatingQueueProgress || MediaPlayer.Source == null || !MediaPlayer.NaturalDuration.HasTimeSpan) return;
-        var newPosition = TimeSpan.FromSeconds(ProgressSlider.Value / 100 * 
+        var newPosition = TimeSpan.FromSeconds(ProgressSlider.Value / 100 *
                                                MediaPlayer.NaturalDuration.TimeSpan.TotalSeconds);
         MediaPlayer.Position = newPosition;
         CurrentTimeText.Text = newPosition.ToString(@"mm\:ss");
@@ -162,22 +169,22 @@ public partial class MainWindow : Window
     private void PlayButton_Click(object sender, RoutedEventArgs e)
     {
         if (MediaPlayer.Source == null) return;
-        
+
         MediaPlayer.Play();
-        _progressTimer.Start();
+        _progressTimer?.Start();
         PlayerStatus.Visibility = Visibility.Collapsed;
     }
 
     private void PauseButton_Click(object sender, RoutedEventArgs e)
     {
         MediaPlayer.Pause();
-        _progressTimer.Stop();
+        _progressTimer?.Stop();
     }
 
     private void StopButton_Click(object sender, RoutedEventArgs e)
     {
         MediaPlayer.Stop();
-        _progressTimer.Stop();
+        _progressTimer?.Stop();
         ProgressSlider.Value = 0;
         CurrentTimeText.Text = "00:00";
     }
@@ -193,16 +200,16 @@ public partial class MainWindow : Window
         MediaPlayer.Volume = VolumeSlider.Value;
         UpdateMuteButtonIcon();
     }
-    
+
     private void UpdateMuteButtonIcon()
     {
         if (MediaPlayer.IsMuted || MediaPlayer.Volume == 0)
         {
-            MuteButton.Content = "🔇";  
+            MuteButton.Content = "🔇";
         }
         else
         {
-            MuteButton.Content = "🔊";  
+            MuteButton.Content = "🔊";
         }
     }
 }

@@ -8,6 +8,10 @@
         Title="Video Audio Processor" Height="600" Width="900"
         WindowStartupLocation="CenterScreen">
     <Window.Resources>
+        <ImageBrush x:Key="AboutBackgroundBrush"
+                    ImageSource="/Assets/Images/about-background.jpg"
+                    Stretch="UniformToFill"
+                    Opacity="0.32"/>
         <Style TargetType="Button">
             <Setter Property="Background" Value="#FF252526"/>
             <Setter Property="Foreground" Value="White"/>
@@ -85,6 +89,7 @@
                 <MenuItem Header="Треки">
                     <MenuItem Header="В очереди" Click="ShowQueue_Click"/>
                     <MenuItem Header="Обработанные" Click="ShowProcessed_Click"/>
+                    <MenuItem Header="Задачи" Click="ShowJobs_Click"/>
                 </MenuItem>
 
                 <!-- Меню Проекты -->
@@ -95,66 +100,87 @@
             </Menu>
             
             <!-- Основное содержимое -->
-            <Grid x:Name="MainContent">
-                <!-- Стартовый экран -->
+            <Grid x:Name="MainContent">                <!-- Стартовый экран -->
                 <Grid x:Name="StartScreen" Visibility="Visible">
-                    <Border Margin="20" Padding="16" Background="#FF252526" BorderBrush="#FF3F3F46" BorderThickness="1">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Border Background="{StaticResource AboutBackgroundBrush}" />
+                    <Border Background="#B8141414" />
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="32,28,32,32">
+                        <Grid HorizontalAlignment="Left" MaxWidth="960">
                             <StackPanel>
                                 <TextBlock Text="Video Audio Processor" Foreground="White" FontSize="22" FontWeight="Bold" Margin="0,0,0,8"/>
-                                <TextBlock Text="Инструкция по использованию" Foreground="LightGray" FontSize="14" Margin="0,0,0,16"/>
+                                <TextBlock Text="Подробная инструкция по использованию" Foreground="LightGray" FontSize="14" Margin="0,0,0,16"/>
 
+                                <TextBlock Text="1) Что делает приложение" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
-                                    Это приложение помогает хранить медиафайлы, обрабатывать их через FFmpeg и собирать видеопроекты с таймлайном.
-                                    После запуска по умолчанию открывается эта страница.
+                                    Video Audio Processor — это локальное Windows-приложение для повседневной работы с медиафайлами. Оно помогает загружать файлы в Queue (очередь), обрабатывать их через FFmpeg (инструмент обработки медиа), собирать простые проекты на timeline (временная шкала проекта) и сохранять результат в папку Processed (обработанные файлы).&#10;
+                                    Приложение подходит для быстрой практической работы без тяжелого монтажа: загрузить файл, обработать, при необходимости добавить его в проект и выполнить render (финальная сборка и сохранение результата).
                                 </TextBlock>
 
-                                <TextBlock Text="1) Подготовка перед работой" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Text="2) Подготовка перед началом работы" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
-                                    • Убедитесь, что на компьютере установлен FFmpeg (команды ffmpeg и ffprobe доступны в системе).&#10;
-                                    • Нажмите «Файл» -> «Загрузить», выберите корневую папку проекта, затем выберите медиафайл для добавления в очередь.&#10;
-                                    • Файлы сохраняются в структуру TrackManager внутри выбранной корневой папки.
+                                    • Убедитесь, что на компьютере установлены FFmpeg (инструмент обработки медиа) и FFprobe (инструмент анализа медиафайлов).&#10;
+                                    • Нажмите «Файл» -> «Загрузить», затем выберите корневую папку проекта и медиафайл для добавления.&#10;
+                                    • Приложение автоматически использует структуру TrackManager с папками Queue (очередь), Processed (обработанные файлы) и Projects (проекты) внутри выбранной корневой папки.&#10;
+                                    • Queue хранит исходные файлы, Processed хранит результаты обработки и рендера, а Projects содержит файлы проектов.
                                 </TextBlock>
 
-                                <TextBlock Text="2) Работа с треками" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Text="3) Работа с очередью и обработанными файлами" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
-                                    • «Треки» -> «В очереди»: список исходных файлов. Можно просматривать, удалять и отправлять файл в обработку.&#10;
-                                    • «Треки» -> «Обработанные»: список уже обработанных файлов. Можно воспроизводить, удалить или вернуть файл в очередь.
+                                    • Раздел «Треки» -> «В очереди» показывает все исходные файлы. Здесь можно выбрать файл, просмотреть его во встроенном плеере, удалить или открыть экран обработки.&#10;
+                                    • Если выбрать несколько файлов в очереди, можно запустить Lossless merge (объединение без перекодирования). Этот режим пытается склеить совместимые файлы без повторного кодирования.&#10;
+                                    • Раздел «Треки» -> «Обработанные» показывает уже готовые файлы. Их можно просматривать, удалять и возвращать обратно в Queue (очередь) для повторного использования.
                                 </TextBlock>
 
-                                <TextBlock Text="3) Обработка файла (экран «Выполнить»)" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Text="4) Обработка одного файла" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
-                                    • Выберите формат вывода: MP4, AVI или MKV.&#10;
-                                    • При необходимости задайте обрезку по времени (начало и конец).&#10;
-                                    • Укажите имя выходного файла.&#10;
-                                    • Включайте дополнительные функции только при необходимости: VP9, 2-pass, ускоренное кодирование, изменение FPS, извлечение аудио, обрезка/масштаб и т.д.&#10;
-                                    • Для опытных пользователей доступно поле ручной команды FFmpeg с шаблонами {input} и {output}.
+                                    • На экране «Выполнить» можно выбрать формат вывода, имя файла и базовые параметры обработки.&#10;
+                                    • Можно применить preset (готовый шаблон настроек) для устройств и соцсетей, например для YouTube, TikTok, Instagram Reels, Telegram или iPhone.&#10;
+                                    • Доступна ручная настройка разрешения, обрезка по времени, изменение FPS (частота кадров), crop / resize (обрезка и изменение размера кадра), а также fast encode (ускоренное кодирование с потерей качества).&#10;
+                                    • Можно включить Lossless cut (обрезка без перекодирования), если нужен быстрый результат без повторного кодирования. Этот режим работает через stream copy (копирование потоков без перекодирования).&#10;
+                                    • Поддерживаются subtitle (субтитры): Burn In (вшивание в изображение видео) и Embed (вложение как отдельной дорожки).&#10;
+                                    • Доступно hardware acceleration (аппаратное ускорение) для кодирования и декодирования: Auto (автоматический выбор), NVIDIA NVENC, Intel QSV и AMD AMF.&#10;
+                                    • Для видео доступны VP9 (видеокодек VP9), 2-pass (двухпроходное кодирование для более точного битрейта), remove audio (удаление звука), extract audio to Opus (извлечение звука и конвертация в Opus) и alpha channel (альфа-канал, режим прозрачности).&#10;
+                                    • Для опытных пользователей есть custom FFmpeg command (пользовательская команда FFmpeg), где можно вручную задать команду с шаблонами {input} и {output}.&#10;
+                                    • Кнопка «Выполнить» запускает обработку сразу, а кнопка «В очередь» добавляет задачу в batch / job queue (очередь задач пакетной обработки).
                                 </TextBlock>
 
-                                <TextBlock Text="4) Проекты (медиаколлажи)" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Text="5) Очередь задач" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
-                                    • Откройте раздел «Проекты», создайте новый проект и задайте имя.&#10;
-                                    • Добавляйте видео/фото на таймлайн: из базы треков или напрямую с компьютера.&#10;
-                                    • Добавляйте аудиодорожки: из базы или с компьютера, можно очистить и выбрать заново.&#10;
-                                    • Настройте формат, разрешение и другие параметры проекта.&#10;
-                                    • Нажмите «Сохранить» для рендера готового результата в обработанные файлы.
+                                    • Раздел «Треки» -> «Задачи» показывает batch / job queue (очередь задач пакетной обработки).&#10;
+                                    • Здесь отображаются задачи со статусами Pending (ожидает), Running (выполняется), Completed (завершено) и Failed (ошибка).&#10;
+                                    • Можно запускать все задачи сразу, запускать только выбранную задачу, удалять выбранную задачу и очищать уже завершенные задачи.&#10;
+                                    • Очередь задач полезна, если вы хотите подготовить несколько операций заранее и запустить их позже одной серией.
                                 </TextBlock>
 
-                                <TextBlock Text="5) Практические рекомендации" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Text="6) Проекты и timeline" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
-                                    • Для быстрых тестов используйте небольшие файлы и короткие фрагменты.&#10;
-                                    • Если рендер не запускается, проверьте путь к корневой папке и наличие ffmpeg/ffprobe в PATH.&#10;
-                                    • Если файл уже существует в целевой папке, используйте другое имя, чтобы избежать конфликта.
+                                    • В разделе «Проекты» можно создать новый проект, задать имя и открыть редактор проекта.&#10;
+                                    • В проект можно добавлять видео и фото как из локальной базы треков, так и напрямую с компьютера.&#10;
+                                    • Для audio track (аудиодорожка) можно выбрать файлы из базы или с компьютера, очистить выбранное аудио и при необходимости использовать audio from video (аудио из видео).&#10;
+                                    • В правой части редактора задаются формат вывода, разрешение и другие параметры проекта.&#10;
+                                    • После настройки можно нажать «Сохранить» и выполнить render (финальная сборка и сохранение результата) проекта в папку Processed (обработанные файлы).
                                 </TextBlock>
 
-                                <TextBlock Text="Навигация" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Text="7) Практические советы и ограничения" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock Foreground="White" TextWrapping="Wrap" Margin="0,0,0,14">
+                                    • Для первых тестов используйте короткие файлы и небольшие фрагменты, чтобы быстрее проверить настройки.&#10;
+                                    • Lossless cut (обрезка без перекодирования) нельзя совмещать с фильтрами, VP9 (видеокодек VP9) и subtitle (субтитры).&#10;
+                                    • Subtitle (субтитры) недоступны для audio-only (только аудио) режима.&#10;
+                                    • Embed (вложение как отдельной дорожки) для subtitle (субтитры) не поддерживается при выводе в AVI.&#10;
+                                    • Lossless merge (объединение без перекодирования) лучше работает для файлов одного формата и совместимых кодеков.&#10;
+                                    • Если hardware acceleration (аппаратное ускорение) не сработало, попробуйте переключиться на Auto (автоматический выбор) или полностью отключить ускорение.&#10;
+                                    • Если файл с таким именем уже существует в целевой папке, укажите другое имя, чтобы избежать конфликта.
+                                </TextBlock>
+
+                                <TextBlock Text="8) Навигация" Foreground="White" FontWeight="Bold" Margin="0,0,0,6"/>
                                 <TextBlock Foreground="White" TextWrapping="Wrap">
-                                    • Вкладка «О приложении» всегда возвращает вас на эту инструкцию.&#10;
-                                    • Кнопка «Назад» в разделе проектов также возвращает на этот экран.
+                                    • Вкладка «О приложении» всегда возвращает вас на этот экран справки.&#10;
+                                    • Разделы «В очереди», «Обработанные», «Задачи» и «Проекты» доступны из верхнего меню.&#10;
+                                    • Если вы хотите быстро проверить результат, сначала откройте Queue (очередь) или Processed (обработанные файлы), выберите файл, затем переходите к обработке или проекту.
                                 </TextBlock>
                             </StackPanel>
-                        </ScrollViewer>
-                    </Border>
+                        </Grid>
+                    </ScrollViewer>
                 </Grid>
 
                 <!-- Экран очереди -->
@@ -166,12 +192,12 @@
                     </Grid.ColumnDefinitions>
                     
                     <!-- Список файлов -->
-                    <ListBox x:Name="FilesListBox" Grid.Column="0" 
-                             SelectionChanged="FilesListBox_SelectionChanged">
+                    <ListBox x:Name="FilesListBox" Grid.Column="0" SelectionChanged="FilesListBox_SelectionChanged" SelectionMode="Extended">
                         <ListBox.ContextMenu>
                             <ContextMenu>
                                 <MenuItem Header="Удалить" Click="DeleteFile_Click"/>
                                 <MenuItem Header="Обработать" Click="ProcessFile_Click"/>
+                                <MenuItem Header="Lossless merge" Click="LosslessMergeSelectedFiles_Click"/>
                             </ContextMenu>
                         </ListBox.ContextMenu>
                     </ListBox>
@@ -211,10 +237,10 @@
                         
                         <!-- Элементы управления -->
                         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-                            <Button Content="▶" Width="40" Click="PlayButton_Click"/>
-                            <Button Content="⏸" Width="40" Click="PauseButton_Click" Margin="5,0"/>
-                            <Button Content="⏹" Width="40" Click="StopButton_Click"/>
-                            <Button x:Name="MuteButton" Content="🔊" Width="40" Click="ToggleMuteButton_Click" Margin="5,0"/>
+                            <Button Content="▶" Width="52" Click="PlayButton_Click"/>
+                            <Button Content="⏸" Width="60" Click="PauseButton_Click" Margin="5,0"/>
+                            <Button Content="⏹" Width="52" Click="StopButton_Click"/>
+                            <Button x:Name="MuteButton" Content="🔊" Width="64" Click="ToggleMuteButton_Click" Margin="5,0"/>
                             <Slider x:Name="VolumeSlider" Width="100" Minimum="0" Maximum="1" Value="0.5"
                                     ValueChanged="VolumeSlider_ValueChanged"/>
                         </StackPanel>
@@ -283,9 +309,9 @@
                         </StackPanel>
 
                         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-                            <Button Content="▶" Width="40" Click="ProcessedPlayButton_Click"/>
-                            <Button Content="⏸" Width="40" Click="ProcessedPauseButton_Click" Margin="5,0"/>
-                            <Button Content="⏹" Width="40" Click="ProcessedStopButton_Click"/>
+                            <Button Content="▶" Width="52" Click="ProcessedPlayButton_Click"/>
+                            <Button Content="⏸" Width="60" Click="ProcessedPauseButton_Click" Margin="5,0"/>
+                            <Button Content="⏹" Width="52" Click="ProcessedStopButton_Click"/>
                         </StackPanel>
 
                         <TextBlock x:Name="ProcessedPlayerStatus" Grid.Row="0" Grid.RowSpan="4"
@@ -422,6 +448,27 @@
                     </StackPanel>
                 </Grid>
                 
+                <Grid x:Name="BatchScreen" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Margin="20">
+                        <TextBlock Text="Очередь задач" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <TextBlock x:Name="BatchSummaryText" Text="Всего: 0" Foreground="LightGray" Margin="0,0,0,10"/>
+                        <ListBox x:Name="BatchJobsListBox" DisplayMemberPath="DisplayName" Height="260"/>
+                        <TextBlock Text="Задачи выполняются через ffmpeg и сохраняют результат в папку Processed." Foreground="LightGray" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <WrapPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,10,0,20">
+                        <Button Content="Запустить все" Click="RunAllJobs_Click" Width="140" Height="38"/>
+                        <Button Content="Запустить выбранную" Click="RunSelectedJob_Click" Width="170" Height="38" Margin="10,0,0,0"/>
+                        <Button Content="Удалить выбранную" Click="RemoveSelectedJob_Click" Width="170" Height="38" Margin="10,0,0,0"/>
+                        <Button Content="Очистить готовые" Click="ClearCompletedJobs_Click" Width="150" Height="38" Margin="10,0,0,0"/>
+                    </WrapPanel>
+                </Grid>
+                
                 <!-- Добавляем новый Grid для экрана обработки -->
                 <Grid x:Name="ProcessScreen" Visibility="Collapsed">
                     <Grid.ColumnDefinitions>
@@ -454,9 +501,9 @@
                         </StackPanel>
 
                         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-                            <Button Content="▶" Click="PreviewPlay_Click"/>
-                            <Button Content="⏸" Click="PreviewPause_Click" Margin="5,0"/>
-                            <Button Content="⏹" Click="PreviewStop_Click"/>
+                            <Button Content="▶" Width="52" Click="PreviewPlay_Click"/>
+                            <Button Content="⏸" Width="60" Click="PreviewPause_Click" Margin="5,0"/>
+                            <Button Content="⏹" Width="52" Click="PreviewStop_Click"/>
                         </StackPanel>
                     </Grid>
 
@@ -497,13 +544,24 @@
                         <!-- Основные настройки -->
                         <TextBlock Text="Формат вывода:" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
 
-                        <StackPanel Margin="0,0,0,20">
-                            <RadioButton Content="MP4" GroupName="OutputFormat" Tag="mp4" Checked="OnOutputFormatChanged" 
+                        <StackPanel Margin="0,0,0,12">
+                            <RadioButton x:Name="Mp4RadioButton" Content="MP4" GroupName="OutputFormat" Tag="mp4" Checked="OnOutputFormatChanged" 
                                         Foreground="White" Margin="0,0,0,5"/>
-                            <RadioButton Content="AVI" GroupName="OutputFormat" Tag="avi" Checked="OnOutputFormatChanged" 
+                            <RadioButton x:Name="AviRadioButton" Content="AVI" GroupName="OutputFormat" Tag="avi" Checked="OnOutputFormatChanged" 
                                         Foreground="White" Margin="0,0,0,5"/>
-                            <RadioButton Content="MKV" GroupName="OutputFormat" Tag="mkv" Checked="OnOutputFormatChanged" 
+                            <RadioButton x:Name="MkvRadioButton" Content="MKV" GroupName="OutputFormat" Tag="mkv" Checked="OnOutputFormatChanged" 
                                         Foreground="White"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Пресет устройства / соцсети:" FontWeight="Bold" Margin="0,0,0,6" Foreground="White"/>
+                        <ComboBox x:Name="PresetComboBox" SelectionChanged="PresetComboBox_SelectionChanged" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="PresetDescriptionText" Text="Текущие ручные настройки" Foreground="LightGray" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Разрешение:" FontWeight="Bold" Margin="0,0,0,6" Foreground="White"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBox x:Name="OutputWidthTextBox" Width="70" Text="1920"/>
+                            <TextBlock Text="x" Foreground="White" Margin="6,0" VerticalAlignment="Center"/>
+                            <TextBox x:Name="OutputHeightTextBox" Width="70" Text="1080"/>
                         </StackPanel>
 
                         <TextBlock Text="Обрезка:" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
@@ -511,16 +569,35 @@
                             <TextBlock Text="Начало:" Width="60" Foreground="White"/>
                             <TextBox x:Name="TrimStartTextBox" Width="100" Text="00:00:00"/>
                         </StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
                             <TextBlock Text="Конец:" Width="60" Foreground="White"/>
                             <TextBox x:Name="TrimEndTextBox" Width="100" Text="00:00:10"/>
                         </StackPanel>
+
+                        <CheckBox x:Name="LosslessCopyCheckBox" Content="Lossless cut / stream copy (без перекодирования)"/>
+
+                        <TextBlock Text="Аппаратное ускорение:" FontWeight="Bold" Margin="0,0,0,6" Foreground="White"/>
+                        <ComboBox x:Name="HardwareAccelerationComboBox" Margin="0,0,0,6"/>
+                        <CheckBox x:Name="HardwareDecodeCheckBox" Content="Использовать аппаратное декодирование" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Субтитры:" FontWeight="Bold" Margin="0,0,0,6" Foreground="White"/>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="SubtitlePathTextBox" Grid.Column="0" Margin="0,0,10,0"/>
+                            <Button Grid.Column="1" Content="Выбрать" Click="BrowseSubtitle_Click" Width="90"/>
+                        </Grid>
+                        <ComboBox x:Name="SubtitleModeComboBox" Margin="0,0,0,12"/>
                         
                         <TextBlock Text="Название файла:" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
-                        <TextBox x:Name="FileNameTextBox" Margin="0,0,0,20"/>
-                        
-                        <Button Content="Выполнить" Click="ExecuteProcessing_Click" Height="40" Width="120" 
-                                HorizontalAlignment="Center" Foreground="White" Margin="0,0,0,30"/>
+                        <TextBox x:Name="FileNameTextBox" Margin="0,0,0,12"/>
+
+                        <WrapPanel Margin="0,0,0,22">
+                            <Button Content="Выполнить" Click="ExecuteProcessing_Click" Height="40" Width="120" Foreground="White"/>
+                            <Button Content="В очередь" Click="AddProcessingToQueue_Click" Height="40" Width="120" Foreground="White" Margin="10,0,0,0"/>
+                        </WrapPanel>
                         
                         <!-- Дополнительные функции -->
                         <TextBlock Text="Дополнительные функции:" FontWeight="Bold" Margin="0,0,0,15" Foreground="White" FontSize="16"/>
@@ -601,4 +678,16 @@
         </DockPanel>
     </Grid>
 </Window>
+
+
+
+
+
+
+
+
+
+
+
+
 

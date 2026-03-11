@@ -1,4 +1,6 @@
-﻿using System.Configuration;
+﻿using System;
+using System.Linq;
+using System.Configuration;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
@@ -8,9 +10,6 @@ using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace VideoAudioProcessor;
 
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
 public partial class MainWindow : Window
 {
     private static string QueuePath => Path.Combine(RootPath, "TrackManager", "Queue");
@@ -43,6 +42,8 @@ public partial class MainWindow : Window
         InitializePreviewTimer();
         InitializeProgressTimer();
         InitializeProcessedTimer();
+        InitializeBatchQueue();
+        InitializeProcessingOptions();
         VolumeSlider.Value = 0.5;
     }
 
@@ -86,8 +87,6 @@ public partial class MainWindow : Window
                 {
                     Directory.CreateDirectory(QueuePath);
                     destinationPath = GetUniqueQueueFilePath(Path.GetFileName(openFileDialog.FileName));
-
-                    // Сохраняем файл в исходном виде без каких-либо изменений.
                     File.Copy(openFileDialog.FileName, destinationPath, false);
                 });
             });
@@ -167,6 +166,7 @@ public partial class MainWindow : Window
         HideAllScreens();
         StartScreen.Visibility = Visibility.Visible;
     }
+
     private void HideAllScreens()
     {
         StartScreen.Visibility = Visibility.Collapsed;
@@ -175,6 +175,7 @@ public partial class MainWindow : Window
         ProcessScreen.Visibility = Visibility.Collapsed;
         ProjectListScreen.Visibility = Visibility.Collapsed;
         ProjectEditorScreen.Visibility = Visibility.Collapsed;
+        BatchScreen.Visibility = Visibility.Collapsed;
     }
 
     private async Task RunWithWaitDialogAsync(string title, string message, Func<Task> action)
@@ -219,5 +220,4 @@ public partial class MainWindow : Window
         }
     }
 }
-
 
