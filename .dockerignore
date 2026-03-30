@@ -1,0 +1,9 @@
+.git
+.github
+.idea
+.vs
+**/bin
+**/obj
+**/TestResults
+build_diag.log
+tmp_codex_test.txt
