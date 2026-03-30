@@ -1,14 +1,10 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using VideoAudioProcessor.Services;
 
 namespace VideoAudioProcessor;
 
@@ -66,19 +62,19 @@ public partial class MainWindow : Window
     private void PreviewPlay_Click(object sender, RoutedEventArgs e)
     {
         PreviewMediaPlayer.Play();
-        _previewTimer.Start();
+        _previewTimer?.Start();
     }
 
     private void PreviewPause_Click(object sender, RoutedEventArgs e)
     {
         PreviewMediaPlayer.Pause();
-        _previewTimer.Stop();
+        _previewTimer?.Stop();
     }
 
     private void PreviewStop_Click(object sender, RoutedEventArgs e)
     {
         PreviewMediaPlayer.Stop();
-        _previewTimer.Stop();
+        _previewTimer?.Stop();
         PreviewSlider.Value = 0;
         PreviewCurrentTime.Text = "00:00";
     }
@@ -94,7 +90,7 @@ public partial class MainWindow : Window
     private void PreviewMediaPlayer_MediaEnded(object sender, RoutedEventArgs e)
     {
         PreviewMediaPlayer.Stop();
-        _previewTimer.Stop();
+        _previewTimer?.Stop();
     }
 
     private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -159,21 +155,23 @@ public partial class MainWindow : Window
 
     private async void ExecuteProcessing_Click(object sender, RoutedEventArgs e)
     {
-        var request = BuildProcessingRequest();
-        if (request == null)
+        ProcessingRequest request;
+        try
         {
+            request = BuildProcessingRequest() ?? throw new InvalidOperationException("Не удалось создать задачу обработки.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 
         try
         {
+            var processingService = CreateMediaProcessingService();
             await RunWithWaitDialogAsync("Обработка", "Выполняется ffmpeg...", async () =>
             {
-                var (exitCode, errorOutput) = await RunFfmpegAsync(request.Arguments);
-                if (exitCode != 0)
-                {
-                    throw new InvalidOperationException(errorOutput);
-                }
+                await processingService.ExecuteProcessingAsync(request);
             });
 
             RefreshProcessedList();
@@ -187,238 +185,66 @@ public partial class MainWindow : Window
 
     private void AddProcessingToQueue_Click(object sender, RoutedEventArgs e)
     {
-        var request = BuildProcessingRequest();
-        if (request == null)
+        try
         {
-            return;
-        }
+            var request = BuildProcessingRequest();
+            if (request == null)
+            {
+                return;
+            }
 
-        AddProcessingJob(request, $"Обработка {Path.GetFileNameWithoutExtension(request.OutputPath)}");
-        MessageBox.Show("Задача добавлена в очередь.", "Очередь", MessageBoxButton.OK, MessageBoxImage.Information);
+            AddProcessingJob(request, $"Обработка {Path.GetFileNameWithoutExtension(request.OutputPath)}");
+            MessageBox.Show("Задача добавлена в очередь.", "Очередь", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private ProcessingRequest? BuildProcessingRequest()
     {
-        var fileName = FileNameTextBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            MessageBox.Show("Введите название файла.");
-            return null;
-        }
-
-        if (string.IsNullOrWhiteSpace(RootPath))
-        {
-            MessageBox.Show("Пожалуйста, сначала установите корневую папку.");
-            return null;
-        }
-
         if (!TryGetPreviewInputPath(out var inputPath))
         {
             return null;
         }
 
-        if (!File.Exists(inputPath))
-        {
-            MessageBox.Show("Файл для обработки не найден.");
-            return null;
-        }
-
-        Directory.CreateDirectory(ProcessedPath);
-        var outputPath = Path.Combine(ProcessedPath, $"{fileName}.{_selectedFormat}");
-        if (File.Exists(outputPath))
-        {
-            MessageBox.Show("Файл с таким названием уже существует.");
-            return null;
-        }
-
-        var subtitleMode = GetSelectedSubtitleMode();
-        var subtitlePath = SubtitlePathTextBox.Text.Trim();
-        if (subtitleMode != SubtitleMode.None && string.IsNullOrWhiteSpace(subtitlePath))
-        {
-            MessageBox.Show("Выберите файл субтитров.");
-            return null;
-        }
-
-        if (subtitleMode != SubtitleMode.None && !File.Exists(subtitlePath))
-        {
-            MessageBox.Show("Файл субтитров не найден.");
-            return null;
-        }
-
-        var lossless = LosslessCopyCheckBox.IsChecked == true;
-        var extractOpus = ExtractOpusCheckBox.IsChecked == true;
-        if (lossless && (CropResizeCheckBox.IsChecked == true || FpsChangeCheckBox.IsChecked == true || Vp9CheckBox.IsChecked == true || subtitleMode != SubtitleMode.None))
-        {
-            MessageBox.Show("Lossless режим нельзя сочетать с фильтрами, VP9 или субтитрами.");
-            return null;
-        }
-
-        if (extractOpus && subtitleMode != SubtitleMode.None)
-        {
-            MessageBox.Show("Субтитры недоступны для аудио-only режима.");
-            return null;
-        }
-
-        if (subtitleMode == SubtitleMode.Embed && _selectedFormat == "avi")
-        {
-            MessageBox.Show("Вложенные субтитры для AVI не поддерживаются.");
-            return null;
-        }
-
-        var arguments = BuildStandardArguments(inputPath, outputPath, subtitlePath, subtitleMode, lossless, extractOpus);
-        if (string.IsNullOrWhiteSpace(arguments))
-        {
-            return null;
-        }
-
-        return new ProcessingRequest
-        {
-            InputPaths = [inputPath],
-            OutputPath = outputPath,
-            Arguments = arguments,
-            Summary = $"{Path.GetFileName(inputPath)} -> {Path.GetFileName(outputPath)}"
-        };
+        return CreateMediaProcessingService().BuildProcessingRequest(BuildProcessingOptionsFromUi(inputPath));
     }
 
     private string BuildStandardArguments(string inputPath, string outputPath, string subtitlePath, SubtitleMode subtitleMode, bool lossless, bool extractOpus)
     {
-        var start = TrimStartTextBox.Text.Trim();
-        var end = TrimEndTextBox.Text.Trim();
-        var builder = new StringBuilder("-y");
-
-        AppendHardwareDecodeArgs(builder);
-
-        if (lossless)
+        var options = new ProcessingOptions
         {
-            if (!string.IsNullOrWhiteSpace(start))
-            {
-                builder.Append($" -ss {start}");
-            }
+            RootPath = RootPath,
+            InputPath = inputPath,
+            OutputFileName = FileNameTextBox.Text.Trim(),
+            OutputFormat = _selectedFormat,
+            SubtitlePath = subtitlePath,
+            SubtitleMode = subtitleMode,
+            HardwareAccelerationMode = GetSelectedHardwareMode(),
+            HardwareDecodeEnabled = HardwareDecodeCheckBox.IsChecked == true,
+            LosslessCopy = lossless,
+            ExtractOpus = extractOpus,
+            CropResizeEnabled = CropResizeCheckBox.IsChecked == true,
+            CropValue = CropTextBox.Text.Trim(),
+            ScaleValue = ScaleTextBox.Text.Trim(),
+            AlphaChannelEnabled = AlphaChannelCheckBox.IsChecked == true,
+            FpsChangeEnabled = FpsChangeCheckBox.IsChecked == true,
+            FpsValue = FpsTextBox.Text.Trim(),
+            Vp9Enabled = Vp9CheckBox.IsChecked == true,
+            Vp9CrfValue = Vp9CrfTextBox.Text.Trim(),
+            TwoPassEnabled = TwoPassCheckBox.IsChecked == true,
+            TwoPassBitrate = TwoPassBitrateTextBox.Text.Trim(),
+            FastPresetEnabled = FastCheckBox.IsChecked == true,
+            RemoveAudio = RemoveAudioCheckBox.IsChecked == true,
+            TrimStart = TrimStartTextBox.Text.Trim(),
+            TrimEnd = TrimEndTextBox.Text.Trim(),
+            OutputWidth = ParseIntOrDefault(OutputWidthTextBox.Text, 1920),
+            OutputHeight = ParseIntOrDefault(OutputHeightTextBox.Text, 1080)
+        };
 
-            if (!string.IsNullOrWhiteSpace(end))
-            {
-                builder.Append($" -to {end}");
-            }
-
-            builder.Append($" -i \"{inputPath}\" -c copy \"{outputPath}\"");
-            return builder.ToString();
-        }
-
-        builder.Append($" -i \"{inputPath}\"");
-
-        string videoCodec;
-        string audioCodec;
-        switch (_selectedFormat)
-        {
-            case "avi":
-                videoCodec = "mpeg4";
-                audioCodec = "libmp3lame";
-                break;
-            case "mkv":
-                videoCodec = "libx264";
-                audioCodec = "aac";
-                break;
-            default:
-                videoCodec = "libx264";
-                audioCodec = "aac";
-                break;
-        }
-
-        var videoFilters = new List<string>();
-        var outputWidth = ParseIntOrDefault(OutputWidthTextBox.Text, 1920);
-        var outputHeight = ParseIntOrDefault(OutputHeightTextBox.Text, 1080);
-
-        if (!string.IsNullOrWhiteSpace(start))
-        {
-            builder.Append($" -ss {start}");
-        }
-
-        if (!string.IsNullOrWhiteSpace(end))
-        {
-            builder.Append($" -to {end}");
-        }
-
-        if (Vp9CheckBox.IsChecked == true)
-        {
-            videoCodec = "libvpx-vp9";
-        }
-        else
-        {
-            videoCodec = GetVideoCodecForHardware(videoCodec);
-        }
-
-        if (TwoPassCheckBox.IsChecked == true)
-        {
-            builder.Append($" -b:v {TwoPassBitrateTextBox.Text.Trim()}");
-        }
-
-        if (FastCheckBox.IsChecked == true)
-        {
-            builder.Append(" -preset ultrafast");
-        }
-
-        if (CropResizeCheckBox.IsChecked == true)
-        {
-            videoFilters.Add($"crop={CropTextBox.Text.Trim()}");
-            videoFilters.Add($"scale={ScaleTextBox.Text.Trim()}");
-        }
-        else if (outputWidth > 0 && outputHeight > 0)
-        {
-            videoFilters.Add($"scale={outputWidth}:{outputHeight}:force_original_aspect_ratio=decrease");
-            videoFilters.Add($"pad={outputWidth}:{outputHeight}:(ow-iw)/2:(oh-ih)/2");
-        }
-
-        if (AlphaChannelCheckBox.IsChecked == true)
-        {
-            videoFilters.Add("colorkey=0x000000:0.1:0.1");
-            videoFilters.Add("format=yuva420p");
-        }
-
-        if (FpsChangeCheckBox.IsChecked == true)
-        {
-            videoFilters.Add($"fps={FpsTextBox.Text.Trim()}");
-        }
-
-        if (subtitleMode == SubtitleMode.BurnIn)
-        {
-            videoFilters.Add($"subtitles='{EscapeFilterPath(subtitlePath)}'");
-        }
-
-        if (ExtractOpusCheckBox.IsChecked == true)
-        {
-            audioCodec = "libopus";
-            builder.Append(" -vn");
-        }
-        else if (videoFilters.Count > 0)
-        {
-            builder.Append($" -vf \"{string.Join(',', videoFilters)}\"");
-        }
-
-        if (RemoveAudioCheckBox.IsChecked == true)
-        {
-            builder.Append(" -an");
-        }
-        else
-        {
-            builder.Append($" -c:a {audioCodec}");
-        }
-
-        if (!extractOpus)
-        {
-            builder.Append($" -c:v {videoCodec}");
-            if (Vp9CheckBox.IsChecked == true)
-            {
-                builder.Append($" -crf {Vp9CrfTextBox.Text.Trim()} -b:v 0");
-            }
-        }
-
-        if (subtitleMode == SubtitleMode.Embed)
-        {
-            builder.Append($" -i \"{subtitlePath}\" -c:s {GetSubtitleCodec()} -map 0:v? -map 0:a? -map 1:0");
-        }
-
-        builder.Append($" \"{outputPath}\"");
-        return builder.ToString();
+        return CreateMediaProcessingService().BuildStandardArguments(inputPath, outputPath, options);
     }
 
     private SubtitleMode GetSelectedSubtitleMode()
@@ -433,56 +259,6 @@ public partial class MainWindow : Window
         return HardwareAccelerationComboBox.SelectedItem is ComboBoxItem { Tag: HardwareAccelerationMode mode }
             ? mode
             : HardwareAccelerationMode.None;
-    }
-
-    private void AppendHardwareDecodeArgs(StringBuilder builder)
-    {
-        if (HardwareDecodeCheckBox.IsChecked != true)
-        {
-            return;
-        }
-
-        switch (GetSelectedHardwareMode())
-        {
-            case HardwareAccelerationMode.Auto:
-                builder.Append(" -hwaccel auto");
-                break;
-            case HardwareAccelerationMode.NvidiaNvenc:
-                builder.Append(" -hwaccel cuda");
-                break;
-            case HardwareAccelerationMode.IntelQsv:
-                builder.Append(" -hwaccel qsv");
-                break;
-            case HardwareAccelerationMode.AmdAmf:
-                builder.Append(" -hwaccel d3d11va");
-                break;
-        }
-    }
-
-    private string GetVideoCodecForHardware(string fallbackCodec)
-    {
-        if (_selectedFormat == "avi")
-        {
-            return fallbackCodec;
-        }
-
-        return GetSelectedHardwareMode() switch
-        {
-            HardwareAccelerationMode.NvidiaNvenc => "h264_nvenc",
-            HardwareAccelerationMode.IntelQsv => "h264_qsv",
-            HardwareAccelerationMode.AmdAmf => "h264_amf",
-            _ => fallbackCodec
-        };
-    }
-
-    private string GetSubtitleCodec()
-    {
-        return _selectedFormat == "mp4" ? "mov_text" : "srt";
-    }
-
-    private static string EscapeFilterPath(string path)
-    {
-        return path.Replace("\\", "/").Replace(":", "\\:").Replace("'", "\\'");
     }
 
     private async void ExecuteCustomCommand_Click(object sender, RoutedEventArgs e)
@@ -515,20 +291,11 @@ public partial class MainWindow : Window
 
         try
         {
-            var command = CustomCommandTextBox.Text
-                .Replace("{input}", inputPath)
-                .Replace("{output}", outputPath);
-
-            var (exitCode, errorOutput) = await RunFfmpegAsync(command);
-            if (exitCode == 0)
-            {
-                RefreshProcessedList();
-                MessageBox.Show("Команда выполнена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            else
-            {
-                MessageBox.Show($"Ошибка выполнения команды:\n{errorOutput}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            var processingService = CreateMediaProcessingService();
+            var command = processingService.BuildCustomCommand(CustomCommandTextBox.Text, inputPath, outputPath);
+            await processingService.ExecuteCustomCommandAsync(command);
+            RefreshProcessedList();
+            MessageBox.Show("Команда выполнена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
         {
@@ -557,45 +324,11 @@ public partial class MainWindow : Window
 
     private ProcessingRequest? BuildLosslessMergeRequest(IReadOnlyList<string> inputPaths, string outputPath)
     {
-        if (inputPaths.Count < 2)
-        {
-            return null;
-        }
-
-        var concatListPath = Path.Combine(Path.GetTempPath(), $"vap_merge_{Guid.NewGuid():N}.txt");
-        var listContent = string.Join(Environment.NewLine, inputPaths.Select(path => $"file '{path.Replace("'", "''")}'"));
-        File.WriteAllText(concatListPath, listContent);
-
-        return new ProcessingRequest
-        {
-            InputPaths = inputPaths,
-            OutputPath = outputPath,
-            Arguments = $"-y -f concat -safe 0 -i \"{concatListPath}\" -c copy \"{outputPath}\"",
-            Summary = $"Merge {inputPaths.Count} файлов",
-            IsMerge = true
-        };
+        return CreateMediaProcessingService().BuildLosslessMergeRequest(inputPaths, outputPath);
     }
 
-    private static async Task<(int ExitCode, string ErrorOutput)> RunFfmpegAsync(string arguments)
+    private async Task<(int ExitCode, string ErrorOutput)> RunFfmpegAsync(string arguments)
     {
-        var process = new Process
-        {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = "ffmpeg",
-                Arguments = arguments,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            }
-        };
-
-        process.Start();
-        var errorOutput = await process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync();
-
-        return (process.ExitCode, errorOutput);
+        return await _commandRunner.RunFfmpegAsync(arguments);
     }
 }
-

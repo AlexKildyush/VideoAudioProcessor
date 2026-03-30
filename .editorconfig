@@ -1,0 +1,25 @@
+﻿root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+charset = utf-8
+
+[*.xaml]
+charset = utf-8
+
+[*.csproj]
+charset = utf-8
+
+[*.json]
+charset = utf-8
+
+[*.md]
+charset = utf-8
+
+[*.config]
+charset = utf-8

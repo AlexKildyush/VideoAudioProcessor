@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Compile Include="..\VideoAudioProcessor\MediaFormats.cs" Link="MediaFormats.cs" />
+        <Compile Include="..\VideoAudioProcessor\ProcessingModels.cs" Link="ProcessingModels.cs" />
+        <Compile Include="..\VideoAudioProcessor\ProjectModels.cs" Link="ProjectModels.cs" />
+        <Compile Include="..\VideoAudioProcessor\Services\*.cs" Link="Services\%(Filename)%(Extension)" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+        <PackageReference Include="NUnit" Version="4.4.0" />
+        <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    </ItemGroup>
+</Project>

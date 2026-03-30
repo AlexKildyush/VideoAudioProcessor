@@ -1,8 +1,5 @@
-﻿using System;
-using System.Linq;
 using System.Configuration;
 using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
@@ -79,14 +76,14 @@ public partial class MainWindow : Window
 
         try
         {
+            var storage = CreateStorageService();
             string destinationPath = string.Empty;
 
             await RunWithWaitDialogAsync("Загрузка", "Файл загружается...", async () =>
             {
                 await Task.Run(() =>
                 {
-                    Directory.CreateDirectory(QueuePath);
-                    destinationPath = GetUniqueQueueFilePath(Path.GetFileName(openFileDialog.FileName));
+                    destinationPath = storage.GetUniqueQueueFilePath(Path.GetFileName(openFileDialog.FileName));
                     File.Copy(openFileDialog.FileName, destinationPath, false);
                 });
             });
@@ -104,18 +101,7 @@ public partial class MainWindow : Window
 
     private string GetUniqueQueueFilePath(string originalFileName)
     {
-        var baseName = Path.GetFileNameWithoutExtension(originalFileName);
-        var extension = Path.GetExtension(originalFileName);
-        var candidateName = originalFileName;
-        var version = 1;
-
-        while (File.Exists(Path.Combine(QueuePath, candidateName)))
-        {
-            candidateName = $"{baseName}({version}){extension}";
-            version++;
-        }
-
-        return Path.Combine(QueuePath, candidateName);
+        return CreateStorageService().GetUniqueQueueFilePath(originalFileName);
     }
 
     private void ShowQueue_Click(object sender, RoutedEventArgs e)
@@ -132,11 +118,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        var files = Directory.GetFiles(QueuePath)
-            .Where(f => MediaFormats.Supported.Contains(Path.GetExtension(f).ToLower()))
-            .ToList();
-
-        FilesListBox.ItemsSource = files.Select(Path.GetFileName);
+        FilesListBox.ItemsSource = CreateStorageService().GetSupportedQueueFiles();
         HideAllScreens();
         QueueScreen.Visibility = Visibility.Visible;
     }
@@ -220,4 +202,3 @@ public partial class MainWindow : Window
         }
     }
 }
-

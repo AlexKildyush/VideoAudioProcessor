@@ -1,7 +1,4 @@
-﻿using System;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -112,15 +109,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        Directory.CreateDirectory(QueuePath);
         var sourcePath = Path.Combine(ProcessedPath, ProcessedListBox.SelectedItem.ToString()!);
-        var destinationName = GetUniqueQueueFileName(Path.GetFileName(sourcePath));
-        var destinationPath = Path.Combine(QueuePath, destinationName);
 
         try
         {
-            File.Copy(sourcePath, destinationPath);
-            MessageBox.Show($"Файл добавлен в очередь: {destinationName}", "Успешно", MessageBoxButton.OK,
+            var destinationPath = CreateStorageService().CopyToQueue(sourcePath);
+            MessageBox.Show($"Файл добавлен в очередь: {Path.GetFileName(destinationPath)}", "Успешно", MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
         catch (Exception ex)
@@ -138,7 +132,6 @@ public partial class MainWindow : Window
         }
 
         var selectedName = ProcessedListBox.SelectedItem.ToString()!;
-        var selectedFile = Path.Combine(ProcessedPath, selectedName);
         var result = MessageBox.Show($"Удалить файл {selectedName}?", "Подтверждение удаления", MessageBoxButton.YesNo,
             MessageBoxImage.Question);
         if (result != MessageBoxResult.Yes)
@@ -148,15 +141,10 @@ public partial class MainWindow : Window
 
         try
         {
+            var storage = CreateStorageService();
             await RunWithWaitDialogAsync("Удаление", "Файл удаляется...", async () =>
             {
-                await Task.Run(() =>
-                {
-                    if (File.Exists(selectedFile))
-                    {
-                        File.Delete(selectedFile);
-                    }
-                });
+                await Task.Run(() => storage.DeleteProcessedFile(selectedName));
             });
 
             RefreshProcessedList();
@@ -174,33 +162,11 @@ public partial class MainWindow : Window
 
     private string GetUniqueQueueFileName(string originalFileName)
     {
-        var baseName = Path.GetFileNameWithoutExtension(originalFileName);
-        var extension = Path.GetExtension(originalFileName);
-        var candidateName = originalFileName;
-        var version = 1;
-
-        while (File.Exists(Path.Combine(QueuePath, candidateName)))
-        {
-            candidateName = $"{baseName}({version}){extension}";
-            version++;
-        }
-
-        return candidateName;
+        return CreateStorageService().GetUniqueQueueFileName(originalFileName);
     }
 
     private void RefreshProcessedList()
     {
-        if (!Directory.Exists(ProcessedPath))
-        {
-            ProcessedListBox.ItemsSource = null;
-            return;
-        }
-
-        var files = Directory.GetFiles(ProcessedPath)
-            .Where(f => MediaFormats.Supported.Contains(Path.GetExtension(f).ToLower()))
-            .Select(Path.GetFileName)
-            .ToList();
-
-        ProcessedListBox.ItemsSource = files;
+        ProcessedListBox.ItemsSource = CreateStorageService().GetSupportedProcessedFiles();
     }
 }
