@@ -1,22 +1,41 @@
-﻿# VideoAudioProcessor
+# VideoAudioProcessor
 
-Desktop WPF application for media file processing and project rendering (video collage/slideshow) using FFmpeg.
+Настольное WPF-приложение для обработки медиафайлов и рендера проектов (видеоколлажей и слайд-шоу) с использованием FFmpeg.
 
-## What this project does
-- Loads media files into a local queue.
-- Processes media files (trim, transcode, optional custom FFmpeg command).
-- Stores processed output files.
-- Creates editable media projects and renders final videos.
+## Что делает проект
+- Загружает медиафайлы в локальную очередь.
+- Обрабатывает медиафайлы: обрезка, перекодирование, опционально произвольная команда FFmpeg.
+- Сохраняет обработанные выходные файлы.
+- Создаёт редактируемые медиапроекты и рендерит итоговые видео.
 
-## Prerequisites
+## Как скачать приложение
 
-### Required software
-1. Windows 10/11 (WPF desktop app).
-2. .NET SDK 8.0+ (project target: `net8.0-windows`).
-3. FFmpeg (must include both `ffmpeg` and `ffprobe` executables).
+### Как запустить скачанную сборку
 
-### Verify prerequisites
-Run in PowerShell:
+#### Если скачали `.exe`
+1. Сохраните файл в любую удобную папку.
+2. Запустите `.exe`-файл.
+3. Если Windows SmartScreen покажет предупреждение, нажмите **Подробнее** -> **Выполнить в любом случае**, только если вы доверяете источнику релиза.
+
+#### Если скачали `.zip`
+1. Распакуйте архив в отдельную папку.
+2. Откройте распакованную папку.
+3. Запустите основной `.exe`-файл из этой папки.
+
+### Важно
+- Приложение работает на Windows 10/11.
+- Для функций обработки медиа по-прежнему требуется FFmpeg. Убедитесь, что `ffmpeg` и `ffprobe` установлены и доступны в `PATH`.
+- Если в описании релиза указаны дополнительные файлы рядом с `.exe`, храните их в одной папке с исполняемым файлом.
+
+## Требования
+
+### Необходимое ПО
+1. Windows 10/11 (настольное WPF-приложение).
+2. .NET SDK 8.0+ (целевая платформа проекта: `net8.0-windows`).
+3. FFmpeg (в составе должны быть оба исполняемых файла: `ffmpeg` и `ffprobe`).
+
+### Проверка зависимостей
+Выполните в PowerShell:
 
 ```powershell
 dotnet --version
@@ -24,58 +43,60 @@ ffmpeg -version
 ffprobe -version
 ```
 
-If `ffmpeg`/`ffprobe` commands are not found, add FFmpeg `bin` folder to your `PATH` and restart terminal/IDE.
+Если команды `ffmpeg` или `ffprobe` не найдены, добавьте папку `bin` от FFmpeg в `PATH` и перезапустите терминал или IDE.
 
-## Project setup (first run)
-1. Clone repository:
+## Настройка проекта для разработки
+1. Клонируйте репозиторий:
    ```powershell
    git clone <repo-url>
    cd VideoAudioProcessor
    ```
-2. Restore dependencies:
+2. Восстановите зависимости:
    ```powershell
    dotnet restore
    ```
-3. Build:
+3. Соберите проект:
    ```powershell
    dotnet build VideoAudioProcessor.sln
    ```
-4. Run:
+4. Запустите приложение:
    ```powershell
    dotnet run --project .\VideoAudioProcessor\VideoAudioProcessor.csproj
    ```
 
-## Local data structure
-The app asks for a root folder on first file upload and uses it as workspace.
+## Локальная структура данных
 
-Inside selected root folder it creates/uses:
+При первой загрузке файла приложение запрашивает корневую папку и использует её как рабочее пространство.
+
+Внутри выбранной папки создаются и используются:
 
 ```text
 TrackManager/
-  Queue/                  # source media queue
-  Processed/              # processed output files
+  Queue/                  # очередь исходных медиафайлов
+  Processed/              # обработанные выходные файлы
   Projects/
-    VideoCollage/         # project JSON files
-    SlideShow/            # project JSON files
+    VideoCollage/         # JSON-файлы проектов
+    SlideShow/            # JSON-файлы проектов
 ```
 
-## Services and components
-This repository is a single desktop app (no microservices, no database).
+## Сервисы и компоненты
 
-- `UI (WPF)`: main user workflow (upload, queue, processing, projects).
-- `FFmpeg integration`: executes media processing and rendering commands.
-- `FFprobe integration`: reads media metadata (duration/audio stream checks).
-- `File system storage`: persists queue/processed files and project JSON state.
+Этот репозиторий содержит одно настольное приложение без микросервисов и без базы данных.
 
-## Usage documentation
+- `UI (WPF)` - основной пользовательский интерфейс: загрузка, очередь, обработка, проекты.
+- `FFmpeg integration` - выполнение команд обработки медиа и рендера.
+- `FFprobe integration` - чтение метаданных медиафайлов: длительность, наличие аудиодорожек и другие проверки.
+- `File system storage` - хранение очереди, обработанных файлов и JSON-состояния проектов в файловой системе.
 
-### In-app documentation
-- Open the app and go to **"О приложении"** (About).
-- This is the default screen at startup and contains user instructions.
+## Документация по использованию
 
-### Developer-oriented code entry points
-- `VideoAudioProcessor/MainWindow.xaml` - UI layout and screens.
-- `VideoAudioProcessor/MainWindow.xaml.cs` - app-level navigation and base actions.
-- `VideoAudioProcessor/MainWindow.Process.xaml.cs` - single file processing via FFmpeg.
-- `VideoAudioProcessor/MainWindow.ProjectRender.xaml.cs` - project rendering and FFprobe logic.
-- `VideoAudioProcessor/MainWindow.Projects.xaml.cs` - project editor/list logic.
+### Документация внутри приложения
+- Откройте приложение и перейдите в раздел **«О приложении»**.
+- Это стартовый экран по умолчанию, в нём размещена инструкция для пользователя.
+
+### Точки входа в код для разработчиков
+- `VideoAudioProcessor/MainWindow.xaml` - разметка интерфейса и экранов.
+- `VideoAudioProcessor/MainWindow.xaml.cs` - навигация по приложению и базовые действия.
+- `VideoAudioProcessor/MainWindow.Process.xaml.cs` - обработка отдельных файлов через FFmpeg.
+- `VideoAudioProcessor/MainWindow.ProjectRender.xaml.cs` - рендер проектов и логика работы с FFprobe.
+- `VideoAudioProcessor/MainWindow.Projects.xaml.cs` - редактор и список проектов.

@@ -1,0 +1,71 @@
+name: Release Assets
+
+on:
+  release:
+    types:
+      - published
+      - edited
+      - prereleased
+
+permissions:
+  contents: write
+
+jobs:
+  publish-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore solution
+        run: dotnet restore "VideoAudioProcessor.sln" --configfile NuGet.Config
+
+      - name: Publish Windows executable
+        shell: pwsh
+        run: >
+          dotnet publish "VideoAudioProcessor\VideoAudioProcessor.csproj"
+          --configuration Release
+          --framework net8.0-windows
+          --runtime win-x64
+          --self-contained true
+          /p:PublishSingleFile=true
+          /p:IncludeNativeLibrariesForSelfExtract=true
+          /p:EnableCompressionInSingleFile=true
+          /p:DebugType=None
+          /p:DebugSymbols=false
+          --output "${{ github.workspace }}\release\publish"
+
+      - name: Create zip archive
+        shell: pwsh
+        run: |
+          $releaseDir = Join-Path $env:GITHUB_WORKSPACE "release"
+          $publishDir = Join-Path $releaseDir "publish"
+          $tag = "${{ github.event.release.tag_name }}"
+          $exeSource = Join-Path $publishDir "VideoAudioProcessor.exe"
+          $exeTarget = Join-Path $releaseDir "VideoAudioProcessor-$tag-win-x64.exe"
+          $zipTarget = Join-Path $releaseDir "VideoAudioProcessor-$tag-win-x64.zip"
+
+          Copy-Item -LiteralPath $exeSource -Destination $exeTarget -Force
+
+          if (Test-Path -LiteralPath $zipTarget) {
+            Remove-Item -LiteralPath $zipTarget -Force
+          }
+
+          Compress-Archive -Path (Join-Path $publishDir "*") -DestinationPath $zipTarget
+
+      - name: Upload assets to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          gh release upload $tag `
+            "release\VideoAudioProcessor-$tag-win-x64.exe" `
+            "release\VideoAudioProcessor-$tag-win-x64.zip" `
+            --clobber
