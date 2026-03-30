@@ -1,20 +1,18 @@
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using Microsoft.Win32;
 using Microsoft.VisualBasic;
+using Microsoft.Win32;
+using VideoAudioProcessor.Services;
 
 namespace VideoAudioProcessor;
 
 public partial class MainWindow : Window
 {
-    private const string ProjectsFolderName = "Projects";
     private const int DefaultProjectFps = 30;
     private const double DefaultTransitionSeconds = 1;
     private const double DefaultMaxClipDurationSeconds = 0;
@@ -24,13 +22,10 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<ProjectAudioItem> _audioTimelineItems = new();
     private readonly ObservableCollection<TimelineListEntry> _timelineListItems = new();
 
-    private string ProjectsRootPath => Path.Combine(RootPath, "TrackManager", ProjectsFolderName);
-
     private void ShowVideoCollageProjects_Click(object sender, RoutedEventArgs e)
     {
         ShowProjectList(ProjectType.VideoCollage);
     }
-
 
     private void ShowProjectList(ProjectType type)
     {
@@ -42,7 +37,7 @@ public partial class MainWindow : Window
         }
 
         _currentProjectType = type;
-        ProjectListTitle.Text = "Проекты медиаколлажей";
+        ProjectListTitle.Text = type == ProjectType.SlideShow ? "Проекты слайдшоу" : "Проекты медиаколлажей";
         RefreshProjectList();
         HideAllScreens();
         ProjectListScreen.Visibility = Visibility.Visible;
@@ -50,15 +45,7 @@ public partial class MainWindow : Window
 
     private void RefreshProjectList()
     {
-        var projectsPath = GetProjectsPath(_currentProjectType);
-        Directory.CreateDirectory(projectsPath);
-
-        var names = Directory.GetFiles(projectsPath, "*.json")
-            .Select(Path.GetFileNameWithoutExtension)
-            .OrderBy(name => name)
-            .ToList();
-
-        ProjectsListBox.ItemsSource = names;
+        ProjectsListBox.ItemsSource = CreateStorageService().ListProjectNames(_currentProjectType);
     }
 
     private void CreateProject_Click(object sender, RoutedEventArgs e)
@@ -76,7 +63,8 @@ public partial class MainWindow : Window
             return;
         }
 
-        var projectPath = GetProjectFilePath(_currentProjectType, sanitizedName);
+        var storage = CreateStorageService();
+        var projectPath = storage.GetProjectFilePath(_currentProjectType, sanitizedName);
         if (File.Exists(projectPath))
         {
             MessageBox.Show("Проект с таким названием уже существует.");
@@ -93,7 +81,7 @@ public partial class MainWindow : Window
         OpenProjectEditor(project);
     }
 
-    private void ProjectsListBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void ProjectsListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
     {
         OpenSelectedProject();
     }
@@ -110,23 +98,20 @@ public partial class MainWindow : Window
             return;
         }
 
-        var projectPath = GetProjectFilePath(_currentProjectType, projectName);
-        if (!File.Exists(projectPath))
+        try
+        {
+            var project = CreateStorageService().LoadProject(_currentProjectType, projectName);
+            OpenProjectEditor(project);
+        }
+        catch (FileNotFoundException)
         {
             MessageBox.Show("Файл проекта не найден.");
             RefreshProjectList();
-            return;
         }
-
-        var json = File.ReadAllText(projectPath);
-        var project = JsonSerializer.Deserialize<ProjectData>(json);
-        if (project == null)
+        catch (Exception)
         {
             MessageBox.Show("Не удалось загрузить проект.");
-            return;
         }
-
-        OpenProjectEditor(project);
     }
 
     private void DeleteProject_Click(object sender, RoutedEventArgs e)
@@ -143,26 +128,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        var projectPath = GetProjectFilePath(_currentProjectType, projectName);
-        if (File.Exists(projectPath))
-        {
-            File.Delete(projectPath);
-        }
-
+        CreateStorageService().DeleteProject(_currentProjectType, projectName);
         RefreshProjectList();
     }
 
     private void EnsureAudioItemsMigrated(ProjectData project)
     {
-        project.AudioItems ??= new List<ProjectAudioItem>();
-        if (project.AudioItems.Count == 0 && !string.IsNullOrWhiteSpace(project.AudioPath))
-        {
-            project.AudioItems.Add(new ProjectAudioItem
-            {
-                Path = project.AudioPath,
-                DurationSeconds = project.AudioDurationSeconds
-            });
-        }
+        CreateProjectRenderService().EnsureAudioItemsMigrated(project);
     }
 
     private void SyncProjectAudioState(ProjectData project)
@@ -218,7 +190,7 @@ public partial class MainWindow : Window
         }
 
         TimelineItemsListBox.ItemsSource = _timelineListItems;
-        ProjectEditorTitle.Text = "Форма редактирования медиаколлажа";
+        ProjectEditorTitle.Text = project.Type == ProjectType.SlideShow ? "Форма редактирования слайдшоу" : "Форма редактирования медиаколлажа";
         ProjectNameTextBox.Text = project.Name;
         UpdateSelectedAudioText(project);
         UseVideoAudioCheckBox.IsChecked = project.UseVideoAudio;
@@ -237,8 +209,8 @@ public partial class MainWindow : Window
         SlideDurationTextBox.Text = project.SlideDurationSeconds.ToString();
 
         UseVideoAudioCheckBox.Visibility = Visibility.Visible;
-        SlideDurationLabel.Visibility = Visibility.Collapsed;
-        SlideDurationTextBox.Visibility = Visibility.Collapsed;
+        SlideDurationLabel.Visibility = project.Type == ProjectType.SlideShow ? Visibility.Visible : Visibility.Collapsed;
+        SlideDurationTextBox.Visibility = project.Type == ProjectType.SlideShow ? Visibility.Visible : Visibility.Collapsed;
 
         RefreshTimelineList();
         RefreshTimelinePreview();
@@ -279,7 +251,6 @@ public partial class MainWindow : Window
         AddTimelineItem(openFileDialog.FileName, ProjectMediaKind.Video);
     }
 
-
     private void AddImageFromComputer_Click(object sender, RoutedEventArgs e)
     {
         var openFileDialog = new OpenFileDialog
@@ -304,7 +275,7 @@ public partial class MainWindow : Window
         }
 
         var duration = kind == ProjectMediaKind.Image
-            ? PromptDurationSeconds(3)
+            ? PromptDurationSeconds(_currentProject.Type == ProjectType.SlideShow ? _currentProject.SlideDurationSeconds : 3)
             : GetTrimmedDuration(path, _currentProject.MaxClipDurationSeconds);
 
         if (kind == ProjectMediaKind.Image && duration == null)
@@ -518,11 +489,11 @@ public partial class MainWindow : Window
                 Height = 28,
                 Margin = new Thickness(3, 0, 3, 0),
                 CornerRadius = new CornerRadius(3),
-                Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString(color)!,
+                Background = (Brush)new BrushConverter().ConvertFromString(color)!,
                 Child = new TextBlock
                 {
                     Text = $"{Path.GetFileName(item.Path)} ({item.DurationSeconds:0.#}с)",
-                    Foreground = System.Windows.Media.Brushes.White,
+                    Foreground = Brushes.White,
                     Margin = new Thickness(6, 4, 6, 4),
                     TextTrimming = TextTrimming.CharacterEllipsis
                 },
@@ -540,11 +511,11 @@ public partial class MainWindow : Window
                 Height = 28,
                 Margin = new Thickness(3, 0, 3, 0),
                 CornerRadius = new CornerRadius(3),
-                Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#FF2E7D32")!,
+                Background = (Brush)new BrushConverter().ConvertFromString("#FF2E7D32")!,
                 Child = new TextBlock
                 {
                     Text = "Аудио из видео дорожки",
-                    Foreground = System.Windows.Media.Brushes.White,
+                    Foreground = Brushes.White,
                     Margin = new Thickness(6, 4, 6, 4),
                     TextTrimming = TextTrimming.CharacterEllipsis
                 }
@@ -561,11 +532,11 @@ public partial class MainWindow : Window
                 Height = 28,
                 Margin = new Thickness(3, 0, 3, 0),
                 CornerRadius = new CornerRadius(3),
-                Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#FF424242")!,
+                Background = (Brush)new BrushConverter().ConvertFromString("#FF424242")!,
                 Child = new TextBlock
                 {
                     Text = "Без аудио",
-                    Foreground = System.Windows.Media.Brushes.White,
+                    Foreground = Brushes.White,
                     Margin = new Thickness(6, 4, 6, 4),
                     TextTrimming = TextTrimming.CharacterEllipsis
                 }
@@ -583,11 +554,11 @@ public partial class MainWindow : Window
                 Height = 28,
                 Margin = new Thickness(3, 0, 3, 0),
                 CornerRadius = new CornerRadius(3),
-                Background = (System.Windows.Media.Brush)new System.Windows.Media.BrushConverter().ConvertFromString("#FF2E7D32")!,
+                Background = (Brush)new BrushConverter().ConvertFromString("#FF2E7D32")!,
                 Child = new TextBlock
                 {
                     Text = $"{Path.GetFileName(item.Path)} ({audioDuration:0.#}с)",
-                    Foreground = System.Windows.Media.Brushes.White,
+                    Foreground = Brushes.White,
                     Margin = new Thickness(6, 4, 6, 4),
                     TextTrimming = TextTrimming.CharacterEllipsis
                 },
@@ -623,7 +594,7 @@ public partial class MainWindow : Window
             return null;
         }
 
-        var baseTracks = GetBaseTracks(predicate);
+        var baseTracks = CreateStorageService().GetBaseTracks(predicate);
         if (baseTracks.Count == 0)
         {
             MessageBox.Show("В базе треков нет файлов.");
@@ -706,26 +677,6 @@ public partial class MainWindow : Window
         return pickerWindow.ShowDialog() == true ? selectedPath : null;
     }
 
-    private List<TrackStorageItem> GetBaseTracks(Func<string, bool> predicate)
-    {
-        var results = new List<TrackStorageItem>();
-        if (!string.IsNullOrEmpty(QueuePath) && Directory.Exists(QueuePath))
-        {
-            results.AddRange(Directory.GetFiles(QueuePath)
-                .Where(predicate)
-                .Select(path => new TrackStorageItem(path, "В очереди")));
-        }
-
-        if (!string.IsNullOrEmpty(ProcessedPath) && Directory.Exists(ProcessedPath))
-        {
-            results.AddRange(Directory.GetFiles(ProcessedPath)
-                .Where(predicate)
-                .Select(path => new TrackStorageItem(path, "Обработанные")));
-        }
-
-        return results.OrderBy(item => item.Source).ThenBy(item => item.FileName).ToList();
-    }
-
     private static bool IsVideoFile(string path)
     {
         var extension = Path.GetExtension(path).ToLowerInvariant();
@@ -764,11 +715,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (!ValidateProjectForRender(_currentProject))
-        {
-            return;
-        }
-
         _currentProject.OutputFormat = GetSelectedOutputFormat();
         _currentProject.Width = ParseIntOrDefault(ProjectWidthTextBox.Text, 1920);
         _currentProject.Height = ParseIntOrDefault(ProjectHeightTextBox.Text, 1080);
@@ -779,6 +725,16 @@ public partial class MainWindow : Window
         _currentProject.UseVideoAudio = UseVideoAudioCheckBox.IsChecked == true;
         _currentProject.Items = _timelineItems.ToList();
         SyncProjectAudioState(_currentProject);
+
+        try
+        {
+            CreateProjectRenderService().ValidateProjectForRender(_currentProject, _currentProject.OutputFormat);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message);
+            return;
+        }
 
         SaveProjectToFile(_currentProject);
         SaveProjectButton.IsEnabled = false;
@@ -792,14 +748,6 @@ public partial class MainWindow : Window
             SaveProgressPanel.Visibility = Visibility.Collapsed;
             SaveProjectButton.IsEnabled = true;
         }
-    }
-
-    private sealed class TrackStorageItem(string path, string source)
-    {
-        public string Path { get; } = path;
-        public string Source { get; } = source;
-        public string FileName => System.IO.Path.GetFileName(Path);
-        public string DisplayName => $"[{Source}] {FileName}";
     }
 
     private sealed class TimelineListEntry
@@ -852,33 +800,15 @@ public partial class MainWindow : Window
 
     private bool ValidateProjectForRender(ProjectData project)
     {
-        if (project.Items.Count == 0)
+        try
         {
-            MessageBox.Show("Добавьте элементы в таймлайн.");
+            CreateProjectRenderService().ValidateProjectForRender(project, GetSelectedOutputFormat());
+            return true;
+        }
+        catch
+        {
             return false;
         }
-
-        if (project.Items.Any(item => !File.Exists(item.Path)))
-        {
-            MessageBox.Show("Некоторые файлы в таймлайне не найдены.");
-            return false;
-        }
-
-        EnsureAudioItemsMigrated(project);
-        if (project.AudioItems.Any(item => !File.Exists(item.Path)))
-        {
-            MessageBox.Show("Один или несколько аудиофайлов не найдены.");
-            return false;
-        }
-
-        var outputPath = Path.Combine(ProcessedPath, $"{project.Name}.{GetSelectedOutputFormat()}");
-        if (File.Exists(outputPath))
-        {
-            MessageBox.Show("Файл с таким названием уже существует в обработанных.");
-            return false;
-        }
-
-        return true;
     }
 
     private string GetSelectedOutputFormat()
@@ -893,10 +823,7 @@ public partial class MainWindow : Window
 
     private void SaveProjectToFile(ProjectData project)
     {
-        var projectPath = GetProjectFilePath(project.Type, project.Name);
-        Directory.CreateDirectory(Path.GetDirectoryName(projectPath)!);
-        var json = JsonSerializer.Serialize(project, new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(projectPath, json);
+        CreateStorageService().SaveProject(project);
     }
 
     private void RenameProject_Click(object sender, RoutedEventArgs e)
@@ -939,33 +866,28 @@ public partial class MainWindow : Window
             return true;
         }
 
-        var oldProjectPath = GetProjectFilePath(_currentProject.Type, _currentProject.Name);
-        var newProjectPath = GetProjectFilePath(_currentProject.Type, newName);
-        if (File.Exists(newProjectPath))
+        var oldName = _currentProject.Name;
+        try
         {
-            MessageBox.Show("Проект с таким названием уже существует.");
+            CreateStorageService().RenameProject(_currentProject.Type, oldName, newName);
+            _currentProject.Name = newName;
+            return true;
+        }
+        catch (InvalidOperationException ex)
+        {
+            MessageBox.Show(ex.Message);
             return false;
         }
-
-        _currentProject.Name = newName;
-
-        if (File.Exists(oldProjectPath))
-        {
-            File.Move(oldProjectPath, newProjectPath);
-        }
-
-        return true;
     }
 
     private string GetProjectsPath(ProjectType type)
     {
-        var folder = type == ProjectType.VideoCollage ? "VideoCollage" : "SlideShow";
-        return Path.Combine(ProjectsRootPath, folder);
+        return CreateStorageService().GetProjectsPath(type);
     }
 
     private string GetProjectFilePath(ProjectType type, string name)
     {
-        return Path.Combine(GetProjectsPath(type), $"{name}.json");
+        return CreateStorageService().GetProjectFilePath(type, name);
     }
 
     private static bool IsValidProjectName(string name)

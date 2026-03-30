@@ -1,8 +1,5 @@
-﻿using System;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using Microsoft.VisualBasic;
 
@@ -35,25 +32,16 @@ public partial class MainWindow
 
     private void AddProcessingJob(ProcessingRequest request, string jobName)
     {
-        _processingJobs.Add(new ProcessingJob
-        {
-            Name = jobName,
-            InputPaths = request.InputPaths.ToList(),
-            OutputPath = request.OutputPath,
-            Arguments = request.Arguments,
-            Summary = request.Summary,
-            IsMerge = request.IsMerge,
-            Status = BatchJobStatus.Pending
-        });
-
+        _processingJobs.Add(CreateBatchQueueRunner().CreateJob(request, jobName));
         RefreshBatchSummary();
     }
 
     private async void RunAllJobs_Click(object sender, RoutedEventArgs e)
     {
+        var runner = CreateBatchQueueRunner();
         foreach (var job in _processingJobs.Where(j => j.Status == BatchJobStatus.Pending || j.Status == BatchJobStatus.Failed).ToList())
         {
-            await RunJobAsync(job);
+            await RunJobAsync(job, runner);
         }
 
         RefreshBatchSummary();
@@ -66,7 +54,7 @@ public partial class MainWindow
             return;
         }
 
-        await RunJobAsync(job);
+        await RunJobAsync(job, CreateBatchQueueRunner());
         RefreshBatchSummary();
     }
 
@@ -91,49 +79,29 @@ public partial class MainWindow
         RefreshBatchSummary();
     }
 
-    private async Task RunJobAsync(ProcessingJob job)
+    private async Task RunJobAsync(ProcessingJob job, Services.BatchQueueRunner runner)
     {
         if (job.Status == BatchJobStatus.Running)
         {
             return;
         }
 
-        job.Status = BatchJobStatus.Running;
-        job.LastError = null;
         BatchJobsListBox.Items.Refresh();
         RefreshBatchSummary();
 
-        try
-        {
-            if (File.Exists(job.OutputPath))
-            {
-                throw new InvalidOperationException("Выходной файл уже существует.");
-            }
+        await runner.RunJobAsync(job);
 
-            var (exitCode, errorOutput) = await RunFfmpegAsync(job.Arguments);
-            if (exitCode != 0)
-            {
-                job.Status = BatchJobStatus.Failed;
-                job.LastError = errorOutput;
-                MessageBox.Show($"Ошибка задачи '{job.Name}':\n{errorOutput}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-            else
-            {
-                job.Status = BatchJobStatus.Completed;
-                RefreshProcessedList();
-            }
-        }
-        catch (Exception ex)
+        if (job.Status == BatchJobStatus.Completed)
         {
-            job.Status = BatchJobStatus.Failed;
-            job.LastError = ex.Message;
-            MessageBox.Show($"Ошибка задачи '{job.Name}': {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            RefreshProcessedList();
         }
-        finally
+        else if (job.Status == BatchJobStatus.Failed && !string.IsNullOrWhiteSpace(job.LastError))
         {
-            BatchJobsListBox.Items.Refresh();
-            RefreshBatchSummary();
+            MessageBox.Show($"Ошибка задачи '{job.Name}': {job.LastError}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
+
+        BatchJobsListBox.Items.Refresh();
+        RefreshBatchSummary();
     }
 
     private async void LosslessMergeSelectedFiles_Click(object sender, RoutedEventArgs e)
@@ -162,7 +130,8 @@ public partial class MainWindow
             return;
         }
 
-        Directory.CreateDirectory(ProcessedPath);
+        var storage = CreateStorageService();
+        storage.EnsureProcessedDirectory();
         var outputPath = Path.Combine(ProcessedPath, $"{outputName.Trim()}{extension}");
         if (File.Exists(outputPath))
         {
@@ -170,9 +139,14 @@ public partial class MainWindow
             return;
         }
 
-        var request = BuildLosslessMergeRequest(selectedPaths, outputPath);
-        if (request == null)
+        ProcessingRequest request;
+        try
         {
+            request = BuildLosslessMergeRequest(selectedPaths, outputPath) ?? throw new InvalidOperationException("Не удалось создать merge-задачу.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(ex.Message);
             return;
         }
 
@@ -189,16 +163,20 @@ public partial class MainWindow
             return;
         }
 
-        await RunWithWaitDialogAsync("Merge", "Выполняется lossless merge...", async () =>
+        try
         {
-            var (exitCode, errorOutput) = await RunFfmpegAsync(request.Arguments);
-            if (exitCode != 0)
+            var processingService = CreateMediaProcessingService();
+            await RunWithWaitDialogAsync("Merge", "Выполняется lossless merge...", async () =>
             {
-                throw new InvalidOperationException(errorOutput);
-            }
-        });
+                await processingService.ExecuteProcessingAsync(request);
+            });
 
-        RefreshProcessedList();
-        MessageBox.Show("Файлы успешно объединены.");
+            RefreshProcessedList();
+            MessageBox.Show("Файлы успешно объединены.");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Ошибка ffmpeg: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 }

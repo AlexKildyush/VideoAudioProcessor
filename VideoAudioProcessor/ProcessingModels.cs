@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -77,9 +77,9 @@ public static class ProcessingPresets
     [
         new ProcessingPreset
         {
-            Name = "Без пресета",
+            Name = "Р‘РµР· РїСЂРµСЃРµС‚Р°",
             OutputFormat = "mp4",
-            Description = "Текущие ручные настройки"
+            Description = "РўРµРєСѓС‰РёРµ СЂСѓС‡РЅС‹Рµ РЅР°СЃС‚СЂРѕР№РєРё"
         },
         new ProcessingPreset
         {
@@ -88,7 +88,7 @@ public static class ProcessingPresets
             Width = 1920,
             Height = 1080,
             Fps = 30,
-            Description = "Горизонтальное видео 1080p"
+            Description = "Р“РѕСЂРёР·РѕРЅС‚Р°Р»СЊРЅРѕРµ РІРёРґРµРѕ 1080p"
         },
         new ProcessingPreset
         {
@@ -97,7 +97,7 @@ public static class ProcessingPresets
             Width = 1080,
             Height = 1920,
             Fps = 30,
-            Description = "Вертикальный формат для Reels"
+            Description = "Р’РµСЂС‚РёРєР°Р»СЊРЅС‹Р№ С„РѕСЂРјР°С‚ РґР»СЏ Reels"
         },
         new ProcessingPreset
         {
@@ -106,7 +106,7 @@ public static class ProcessingPresets
             Width = 1080,
             Height = 1920,
             Fps = 30,
-            Description = "Вертикальный формат для TikTok"
+            Description = "Р’РµСЂС‚РёРєР°Р»СЊРЅС‹Р№ С„РѕСЂРјР°С‚ РґР»СЏ TikTok"
         },
         new ProcessingPreset
         {
@@ -115,7 +115,7 @@ public static class ProcessingPresets
             Width = 1280,
             Height = 720,
             Fps = 30,
-            Description = "Сжатый ролик для отправки"
+            Description = "РЎР¶Р°С‚С‹Р№ СЂРѕР»РёРє РґР»СЏ РѕС‚РїСЂР°РІРєРё"
         },
         new ProcessingPreset
         {
@@ -124,7 +124,7 @@ public static class ProcessingPresets
             Width = 1920,
             Height = 1080,
             Fps = 30,
-            Description = "Совместимый MP4-профиль"
+            Description = "РЎРѕРІРјРµСЃС‚РёРјС‹Р№ MP4-РїСЂРѕС„РёР»СЊ"
         }
     ]);
 }

@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -40,8 +40,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        var selectedFile = Path.Combine(QueuePath, selectedName);
-
         var result = MessageBox.Show($"Вы точно хотите удалить файл {selectedName}?",
             "Подтверждение удаления",
             MessageBoxButton.YesNo,
@@ -51,15 +49,10 @@ public partial class MainWindow : Window
         {
             try
             {
+                var storage = CreateStorageService();
                 await RunWithWaitDialogAsync("Удаление", "Файл удаляется...", async () =>
                 {
-                    await Task.Run(() =>
-                    {
-                        if (File.Exists(selectedFile))
-                        {
-                            File.Delete(selectedFile);
-                        }
-                    });
+                    await Task.Run(() => storage.DeleteQueueFile(selectedName));
                 });
 
                 RefreshFileList();
@@ -76,18 +69,7 @@ public partial class MainWindow : Window
 
     private void RefreshFileList()
     {
-        if (!Directory.Exists(QueuePath))
-        {
-            FilesListBox.ItemsSource = null;
-            return;
-        }
-
-        var files = Directory.GetFiles(QueuePath)
-            .Where(f => MediaFormats.Supported.Contains(Path.GetExtension(f).ToLower()))
-            .Select(Path.GetFileName)
-            .ToList();
-
-        FilesListBox.ItemsSource = files;
+        FilesListBox.ItemsSource = CreateStorageService().GetSupportedQueueFiles();
     }
 
     private void ProcessFile_Click(object sender, RoutedEventArgs e)
@@ -205,11 +187,11 @@ public partial class MainWindow : Window
     {
         if (MediaPlayer.IsMuted || MediaPlayer.Volume == 0)
         {
-            MuteButton.Content = "🔇";
+            MuteButton.Content = "??";
         }
         else
         {
-            MuteButton.Content = "🔊";
+            MuteButton.Content = "??";
         }
     }
 }
