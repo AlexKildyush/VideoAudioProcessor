@@ -15,8 +15,10 @@ public partial class MainWindow : Window
 
     private void InitializePreviewTimer()
     {
-        _previewTimer = new DispatcherTimer();
-        _previewTimer.Interval = TimeSpan.FromMilliseconds(200);
+        _previewTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(200)
+        };
         _previewTimer.Tick += PreviewTimer_Tick;
     }
 

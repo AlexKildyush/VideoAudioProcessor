@@ -174,27 +174,4 @@ public partial class MainWindow : Window
         CurrentTimeText.Text = "00:00";
     }
 
-    private void ToggleMuteButton_Click(object sender, RoutedEventArgs e)
-    {
-        MediaPlayer.IsMuted = !MediaPlayer.IsMuted;
-        UpdateMuteButtonIcon();
-    }
-
-    private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        MediaPlayer.Volume = VolumeSlider.Value;
-        UpdateMuteButtonIcon();
-    }
-
-    private void UpdateMuteButtonIcon()
-    {
-        if (MediaPlayer.IsMuted || MediaPlayer.Volume == 0)
-        {
-            MuteButton.Content = "??";
-        }
-        else
-        {
-            MuteButton.Content = "??";
-        }
-    }
 }

@@ -36,12 +36,12 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeInformation();
         InitializePreviewTimer();
         InitializeProgressTimer();
         InitializeProcessedTimer();
         InitializeBatchQueue();
         InitializeProcessingOptions();
-        VolumeSlider.Value = 0.5;
     }
 
     private async void LoadFile_Click(object sender, RoutedEventArgs e)
@@ -145,13 +145,12 @@ public partial class MainWindow : Window
 
     private void ShowAbout_Click(object sender, RoutedEventArgs e)
     {
-        HideAllScreens();
-        StartScreen.Visibility = Visibility.Visible;
+        ShowInformationScreen();
     }
 
     private void HideAllScreens()
     {
-        StartScreen.Visibility = Visibility.Collapsed;
+        InfoScreen.Visibility = Visibility.Collapsed;
         QueueScreen.Visibility = Visibility.Collapsed;
         ProcessedScreen.Visibility = Visibility.Collapsed;
         ProcessScreen.Visibility = Visibility.Collapsed;

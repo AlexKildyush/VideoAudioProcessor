@@ -6,19 +6,17 @@ namespace VideoAudioProcessor.Services;
 
 public sealed class FfmpegCommandRunner
 {
-    public async Task<(int ExitCode, string StandardOutput, string StandardError)> RunProcessAsync(string fileName, string arguments, CancellationToken cancellationToken = default)
+    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunProcessAsync(string fileName, string arguments, CancellationToken cancellationToken = default)
     {
-        using var process = new Process
+        using var process = new Process();
+        process.StartInfo = new ProcessStartInfo
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = fileName,
-                Arguments = arguments,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            }
+            FileName = fileName,
+            Arguments = arguments,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
         };
 
         process.Start();
