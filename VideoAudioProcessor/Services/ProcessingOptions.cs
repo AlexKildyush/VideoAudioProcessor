@@ -6,6 +6,8 @@ public sealed class ProcessingOptions
     public string InputPath { get; init; } = string.Empty;
     public string OutputFileName { get; init; } = string.Empty;
     public string OutputFormat { get; init; } = "mp4";
+    public bool UseCustomCommand { get; init; }
+    public string CustomCommandTemplate { get; init; } = string.Empty;
     public string SubtitlePath { get; init; } = string.Empty;
     public SubtitleMode SubtitleMode { get; init; } = SubtitleMode.None;
     public HardwareAccelerationMode HardwareAccelerationMode { get; init; } = HardwareAccelerationMode.None;

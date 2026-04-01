@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private ProjectData? _currentProject;
     private readonly ObservableCollection<ProjectMediaItem> _timelineItems = new();
     private readonly ObservableCollection<ProjectAudioItem> _audioTimelineItems = new();
+    private readonly ObservableCollection<ProjectSubtitleItem> _subtitleTimelineItems = new();
     private readonly ObservableCollection<TimelineListEntry> _timelineListItems = new();
 
     private void ShowVideoCollageProjects_Click(object sender, RoutedEventArgs e)
@@ -152,6 +153,13 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SyncProjectSubtitleState(ProjectData project)
+    {
+        project.SubtitleItems = _subtitleTimelineItems
+            .OrderBy(item => item.StartSeconds)
+            .ToList();
+    }
+
     private void UpdateSelectedAudioText(ProjectData project)
     {
         if (project.UseVideoAudio && _timelineItems.Any(item => item.Kind == ProjectMediaKind.Video))
@@ -172,10 +180,18 @@ public partial class MainWindow : Window
         SelectedAudioText.Text = $"Выбрано аудио: {_audioTimelineItems.Count} (сумма: {totalDuration:0.##} сек.)";
     }
 
+    private void UpdateSelectedSubtitleText()
+    {
+        SelectedSubtitleText.Text = _subtitleTimelineItems.Count == 0
+            ? "Субтитры не добавлены"
+            : $"Субтитров: {_subtitleTimelineItems.Count}";
+    }
+
     private void OpenProjectEditor(ProjectData project)
     {
         _currentProject = project;
         EnsureAudioItemsMigrated(project);
+        project.SubtitleItems ??= [];
 
         _timelineItems.Clear();
         foreach (var item in project.Items)
@@ -189,10 +205,18 @@ public partial class MainWindow : Window
             _audioTimelineItems.Add(item);
         }
 
+        _subtitleTimelineItems.Clear();
+        foreach (var item in project.SubtitleItems.OrderBy(item => item.StartSeconds))
+        {
+            _subtitleTimelineItems.Add(item);
+        }
+
         TimelineItemsListBox.ItemsSource = _timelineListItems;
+        SubtitleItemsListBox.ItemsSource = _subtitleTimelineItems;
         ProjectEditorTitle.Text = project.Type == ProjectType.SlideShow ? "Форма редактирования слайдшоу" : "Форма редактирования медиаколлажа";
         ProjectNameTextBox.Text = project.Name;
         UpdateSelectedAudioText(project);
+        UpdateSelectedSubtitleText();
         UseVideoAudioCheckBox.IsChecked = project.UseVideoAudio;
         ProjectOutputFormatComboBox.SelectedIndex = project.OutputFormat switch
         {
@@ -207,6 +231,7 @@ public partial class MainWindow : Window
         ProjectWidthTextBox.Text = project.Width.ToString();
         ProjectHeightTextBox.Text = project.Height.ToString();
         SlideDurationTextBox.Text = project.SlideDurationSeconds.ToString();
+        ClearSubtitleEditor();
 
         UseVideoAudioCheckBox.Visibility = Visibility.Visible;
         SlideDurationLabel.Visibility = project.Type == ProjectType.SlideShow ? Visibility.Visible : Visibility.Collapsed;
@@ -219,7 +244,7 @@ public partial class MainWindow : Window
         ProjectEditorScreen.Visibility = Visibility.Visible;
     }
 
-    private void AddVideoFromBase_Click(object sender, RoutedEventArgs e)
+    private async void AddVideoFromBase_Click(object sender, RoutedEventArgs e)
     {
         if (_currentProject == null)
         {
@@ -232,10 +257,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        AddTimelineItem(selected, ProjectMediaKind.Video);
+        await AddTimelineItemAsync(selected, ProjectMediaKind.Video);
     }
 
-    private void AddVideoFromComputer_Click(object sender, RoutedEventArgs e)
+    private async void AddVideoFromComputer_Click(object sender, RoutedEventArgs e)
     {
         var openFileDialog = new OpenFileDialog
         {
@@ -248,10 +273,10 @@ public partial class MainWindow : Window
             return;
         }
 
-        AddTimelineItem(openFileDialog.FileName, ProjectMediaKind.Video);
+        await AddTimelineItemAsync(openFileDialog.FileName, ProjectMediaKind.Video);
     }
 
-    private void AddImageFromComputer_Click(object sender, RoutedEventArgs e)
+    private async void AddImageFromComputer_Click(object sender, RoutedEventArgs e)
     {
         var openFileDialog = new OpenFileDialog
         {
@@ -264,19 +289,29 @@ public partial class MainWindow : Window
             return;
         }
 
-        AddTimelineItem(openFileDialog.FileName, ProjectMediaKind.Image);
+        await AddTimelineItemAsync(openFileDialog.FileName, ProjectMediaKind.Image);
     }
 
-    private void AddTimelineItem(string path, ProjectMediaKind kind)
+    private async Task AddTimelineItemAsync(string path, ProjectMediaKind kind)
     {
         if (_currentProject == null)
         {
             return;
         }
 
-        var duration = kind == ProjectMediaKind.Image
-            ? PromptDurationSeconds(_currentProject.Type == ProjectType.SlideShow ? _currentProject.SlideDurationSeconds : 3)
-            : GetTrimmedDuration(path, _currentProject.MaxClipDurationSeconds);
+        double? duration;
+        if (kind == ProjectMediaKind.Image)
+        {
+            duration = PromptDurationSeconds(_currentProject.Type == ProjectType.SlideShow ? _currentProject.SlideDurationSeconds : 3);
+        }
+        else
+        {
+            duration = 0;
+            await RunWithWaitDialogAsync("Добавление в проект", "Подготавливаем медиа для таймлайна...", async () =>
+            {
+                duration = await Task.Run(() => GetTrimmedDuration(path, _currentProject.MaxClipDurationSeconds));
+            });
+        }
 
         if (kind == ProjectMediaKind.Image && duration == null)
         {
@@ -451,12 +486,132 @@ public partial class MainWindow : Window
         UpdateSelectedAudioText(_currentProject);
     }
 
+    private void AddOrUpdateSubtitle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProject == null)
+        {
+            return;
+        }
+
+        var subtitle = BuildSubtitleFromEditor();
+        if (subtitle == null)
+        {
+            return;
+        }
+
+        if (SubtitleItemsListBox.SelectedItem is ProjectSubtitleItem selected)
+        {
+            selected.Text = subtitle.Text;
+            selected.StartSeconds = subtitle.StartSeconds;
+            selected.EndSeconds = subtitle.EndSeconds;
+            selected.FadeSeconds = subtitle.FadeSeconds;
+            selected.FontSize = subtitle.FontSize;
+            selected.ColorHex = subtitle.ColorHex;
+        }
+        else
+        {
+            _subtitleTimelineItems.Add(subtitle);
+        }
+
+        SyncProjectSubtitleState(_currentProject);
+        SaveProjectToFile(_currentProject);
+        SubtitleItemsListBox.Items.Refresh();
+        ClearSubtitleEditor();
+        UpdateSelectedSubtitleText();
+        RefreshTimelinePreview();
+    }
+
+    private void RemoveSubtitle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProject == null || SubtitleItemsListBox.SelectedItem is not ProjectSubtitleItem item)
+        {
+            return;
+        }
+
+        _subtitleTimelineItems.Remove(item);
+        SyncProjectSubtitleState(_currentProject);
+        SaveProjectToFile(_currentProject);
+        ClearSubtitleEditor();
+        UpdateSelectedSubtitleText();
+        RefreshTimelinePreview();
+    }
+
+    private void SubtitleItemsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (SubtitleItemsListBox.SelectedItem is not ProjectSubtitleItem item)
+        {
+            return;
+        }
+
+        SubtitleTextBox.Text = item.Text;
+        SubtitleStartTextBox.Text = item.StartSeconds.ToString("0.##");
+        SubtitleEndTextBox.Text = item.EndSeconds.ToString("0.##");
+        SubtitleFadeTextBox.Text = item.FadeSeconds.ToString("0.##");
+        SubtitleColorTextBox.Text = item.ColorHex;
+        SubtitleSizeTextBox.Text = item.FontSize.ToString();
+        AddSubtitleButton.Content = "Обновить субтитр";
+    }
+
+    private void ClearSubtitleEditor_Click(object sender, RoutedEventArgs e)
+    {
+        ClearSubtitleEditor();
+    }
+
+    private void ClearSubtitleEditor()
+    {
+        SubtitleTextBox.Text = string.Empty;
+        SubtitleStartTextBox.Text = string.Empty;
+        SubtitleEndTextBox.Text = string.Empty;
+        SubtitleFadeTextBox.Text = "0.2";
+        SubtitleColorTextBox.Text = "#FFFFFF";
+        SubtitleSizeTextBox.Text = "42";
+        SubtitleItemsListBox.SelectedItem = null;
+        AddSubtitleButton.Content = "Добавить субтитр";
+    }
+
+    private ProjectSubtitleItem? BuildSubtitleFromEditor()
+    {
+        var text = SubtitleTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            MessageBox.Show("Введите текст субтитра.");
+            return null;
+        }
+
+        var startSeconds = ParseDoubleOrDefault(SubtitleStartTextBox.Text, -1);
+        var endSeconds = ParseDoubleOrDefault(SubtitleEndTextBox.Text, -1);
+        var fadeSeconds = Math.Max(0, ParseDoubleOrDefault(SubtitleFadeTextBox.Text, 0.2));
+        var fontSize = Math.Max(12, ParseIntOrDefault(SubtitleSizeTextBox.Text, 42));
+        var colorHex = NormalizeSubtitleColor(SubtitleColorTextBox.Text);
+
+        if (startSeconds < 0 || endSeconds <= startSeconds)
+        {
+            MessageBox.Show("Укажите корректный интервал субтитра.");
+            return null;
+        }
+
+        return new ProjectSubtitleItem
+        {
+            Text = text,
+            StartSeconds = startSeconds,
+            EndSeconds = endSeconds,
+            FadeSeconds = fadeSeconds,
+            FontSize = fontSize,
+            ColorHex = colorHex
+        };
+    }
+
     private void RefreshTimelineList()
     {
         _timelineListItems.Clear();
         foreach (var item in _timelineItems)
         {
             _timelineListItems.Add(new TimelineListEntry(item));
+        }
+
+        foreach (var subtitleItem in _subtitleTimelineItems.OrderBy(item => item.StartSeconds))
+        {
+            _timelineListItems.Add(TimelineListEntry.CreateSubtitle(subtitleItem));
         }
 
         if (_currentProject?.UseVideoAudio == true && _timelineItems.Any(item => item.Kind == ProjectMediaKind.Video))
@@ -475,6 +630,7 @@ public partial class MainWindow : Window
     {
         VideoTimelinePanel.Children.Clear();
         AudioTimelinePanel.Children.Clear();
+        SubtitleTimelinePanel.Children.Clear();
 
         var totalDuration = _timelineItems.Sum(item => Math.Max(0.5, item.DurationSeconds));
         TimelineScaleText.Text = $"0 сек  |  Общая длительность: {totalDuration:0.##} сек";
@@ -566,6 +722,50 @@ public partial class MainWindow : Window
             };
 
             AudioTimelinePanel.Children.Add(audioBlock);
+        }
+
+        if (_subtitleTimelineItems.Count == 0)
+        {
+            var emptySubtitleBlock = new Border
+            {
+                Width = Math.Max(120, totalDuration * 24),
+                Height = 28,
+                Margin = new Thickness(3, 0, 3, 0),
+                CornerRadius = new CornerRadius(3),
+                Background = (Brush)new BrushConverter().ConvertFromString("#FF424242")!,
+                Child = new TextBlock
+                {
+                    Text = "Без субтитров",
+                    Foreground = Brushes.White,
+                    Margin = new Thickness(6, 4, 6, 4),
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                }
+            };
+            SubtitleTimelinePanel.Children.Add(emptySubtitleBlock);
+            return;
+        }
+
+        foreach (var item in _subtitleTimelineItems.OrderBy(x => x.StartSeconds))
+        {
+            var subtitleDuration = Math.Max(0.5, item.EndSeconds - item.StartSeconds);
+            var subtitleBlock = new Border
+            {
+                Width = Math.Max(80, subtitleDuration * 24),
+                Height = 28,
+                Margin = new Thickness(3, 0, 3, 0),
+                CornerRadius = new CornerRadius(3),
+                Background = (Brush)new BrushConverter().ConvertFromString("#FFB76E00")!,
+                Child = new TextBlock
+                {
+                    Text = $"{item.Text} ({item.StartSeconds:0.#}-{item.EndSeconds:0.#}с)",
+                    Foreground = Brushes.White,
+                    Margin = new Thickness(6, 4, 6, 4),
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                },
+                ToolTip = item.DisplayName
+            };
+
+            SubtitleTimelinePanel.Children.Add(subtitleBlock);
         }
     }
 
@@ -725,6 +925,7 @@ public partial class MainWindow : Window
         _currentProject.UseVideoAudio = UseVideoAudioCheckBox.IsChecked == true;
         _currentProject.Items = _timelineItems.ToList();
         SyncProjectAudioState(_currentProject);
+        SyncProjectSubtitleState(_currentProject);
 
         try
         {
@@ -752,23 +953,33 @@ public partial class MainWindow : Window
 
     private sealed class TimelineListEntry
     {
-        private TimelineListEntry(ProjectMediaItem? mediaItem, ProjectAudioItem? audioItem, bool isAudioFromVideo, string? displayName = null)
+        private TimelineListEntry(ProjectMediaItem? mediaItem, ProjectAudioItem? audioItem, ProjectSubtitleItem? subtitleItem, bool isAudioFromVideo, string? displayName = null)
         {
             MediaItem = mediaItem;
             AudioItem = audioItem;
+            SubtitleItem = subtitleItem;
             IsAudioFromVideo = isAudioFromVideo;
             _displayName = displayName;
+        }
+
+        private TimelineListEntry(ProjectMediaItem? mediaItem, ProjectAudioItem? audioItem, bool isAudioFromVideo, string? displayName = null)
+            : this(mediaItem, audioItem, null, isAudioFromVideo, displayName)
+        {
         }
 
         private readonly string? _displayName;
         public ProjectMediaItem? MediaItem { get; }
         public ProjectAudioItem? AudioItem { get; }
+        public ProjectSubtitleItem? SubtitleItem { get; }
         public bool IsAudioFromVideo { get; }
 
-        public string DisplayName => MediaItem?.DisplayName ?? AudioItem?.DisplayName ?? _displayName ?? string.Empty;
+        public string DisplayName => MediaItem?.DisplayName ?? AudioItem?.DisplayName ?? SubtitleItem?.DisplayName ?? _displayName ?? string.Empty;
 
         public static TimelineListEntry CreateAudio(ProjectAudioItem item) =>
-            new(null, item, false);
+            new(null, item, null, false);
+
+        public static TimelineListEntry CreateSubtitle(ProjectSubtitleItem item) =>
+            new(null, null, item, false);
 
         public static TimelineListEntry CreateAudioFromVideo() =>
             new(null, null, true, "[Аудио] Аудио берется из видео дорожки");
@@ -903,5 +1114,21 @@ public partial class MainWindow : Window
     private static double ParseDoubleOrDefault(string? value, double defaultValue)
     {
         return double.TryParse(value, out var parsed) ? parsed : defaultValue;
+    }
+
+    private static string NormalizeSubtitleColor(string? input)
+    {
+        var value = (input ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "#FFFFFF";
+        }
+
+        if (!value.StartsWith("#"))
+        {
+            value = $"#{value}";
+        }
+
+        return value.Length == 7 ? value.ToUpperInvariant() : "#FFFFFF";
     }
 }

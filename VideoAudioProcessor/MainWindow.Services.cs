@@ -18,34 +18,40 @@ public partial class MainWindow
 
     private ProcessingOptions BuildProcessingOptionsFromUi(string inputPath)
     {
+        var useCustomCommand = !string.IsNullOrWhiteSpace(CustomCommandTextBox.Text);
+        var resolutionEnabled = !string.IsNullOrWhiteSpace(OutputWidthTextBox.Text) && !string.IsNullOrWhiteSpace(OutputHeightTextBox.Text);
+        var cropResizeEnabled = !string.IsNullOrWhiteSpace(CropTextBox.Text) || !string.IsNullOrWhiteSpace(ScaleTextBox.Text);
+
         return new ProcessingOptions
         {
             RootPath = RootPath,
             InputPath = inputPath,
             OutputFileName = FileNameTextBox.Text.Trim(),
             OutputFormat = _selectedFormat,
-            SubtitlePath = SubtitlePathTextBox.Text.Trim(),
-            SubtitleMode = GetSelectedSubtitleMode(),
+            UseCustomCommand = useCustomCommand,
+            CustomCommandTemplate = CustomCommandTextBox.Text.Trim(),
+            SubtitlePath = string.Empty,
+            SubtitleMode = SubtitleMode.None,
             HardwareAccelerationMode = GetSelectedHardwareMode(),
             HardwareDecodeEnabled = HardwareDecodeCheckBox.IsChecked == true,
             LosslessCopy = LosslessCopyCheckBox.IsChecked == true,
             ExtractOpus = ExtractOpusCheckBox.IsChecked == true,
-            CropResizeEnabled = CropResizeCheckBox.IsChecked == true,
+            CropResizeEnabled = cropResizeEnabled,
             CropValue = CropTextBox.Text.Trim(),
             ScaleValue = ScaleTextBox.Text.Trim(),
             AlphaChannelEnabled = AlphaChannelCheckBox.IsChecked == true,
-            FpsChangeEnabled = FpsChangeCheckBox.IsChecked == true,
+            FpsChangeEnabled = !string.IsNullOrWhiteSpace(FpsTextBox.Text),
             FpsValue = FpsTextBox.Text.Trim(),
-            Vp9Enabled = Vp9CheckBox.IsChecked == true,
+            Vp9Enabled = !string.IsNullOrWhiteSpace(Vp9CrfTextBox.Text),
             Vp9CrfValue = Vp9CrfTextBox.Text.Trim(),
-            TwoPassEnabled = TwoPassCheckBox.IsChecked == true,
+            TwoPassEnabled = !string.IsNullOrWhiteSpace(TwoPassBitrateTextBox.Text),
             TwoPassBitrate = TwoPassBitrateTextBox.Text.Trim(),
             FastPresetEnabled = FastCheckBox.IsChecked == true,
             RemoveAudio = RemoveAudioCheckBox.IsChecked == true,
             TrimStart = TrimStartTextBox.Text.Trim(),
             TrimEnd = TrimEndTextBox.Text.Trim(),
-            OutputWidth = ParseIntOrDefault(OutputWidthTextBox.Text, 1920),
-            OutputHeight = ParseIntOrDefault(OutputHeightTextBox.Text, 1080)
+            OutputWidth = resolutionEnabled ? ParseIntOrDefault(OutputWidthTextBox.Text, 0) : 0,
+            OutputHeight = resolutionEnabled ? ParseIntOrDefault(OutputHeightTextBox.Text, 0) : 0
         };
     }
 }

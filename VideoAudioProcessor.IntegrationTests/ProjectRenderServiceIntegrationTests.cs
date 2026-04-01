@@ -123,6 +123,53 @@ internal sealed class ProjectRenderServiceIntegrationTests
     }
 
     [Test]
+    public async Task VideoCollage_Render_WithSubtitleTimeline_BuildsBurnedInSubtitles()
+    {
+        await using var workspace = new TestWorkspace();
+        var media = await workspace.CreateMediaSetAsync();
+
+        var project = new ProjectData
+        {
+            Name = "collage-subtitles",
+            Type = ProjectType.VideoCollage,
+            Items =
+            [
+                new ProjectMediaItem { Path = media.VideoWithAudioPath, Kind = ProjectMediaKind.Video, DurationSeconds = 2 }
+            ],
+            SubtitleItems =
+            [
+                new ProjectSubtitleItem
+                {
+                    Text = "Hello world",
+                    StartSeconds = 0.2,
+                    EndSeconds = 1.4,
+                    FadeSeconds = 0.25,
+                    FontSize = 38,
+                    ColorHex = "#FFD54F"
+                }
+            ],
+            UseVideoAudio = true,
+            OutputFormat = "mp4",
+            Width = 320,
+            Height = 240,
+            Fps = 24
+        };
+
+        var expectedOutputPath = workspace.Storage.GetProcessedOutputPath(project.Name, project.OutputFormat);
+        var (arguments, tempFiles) = workspace.ProjectRenderer.BuildVideoCollageArguments(project, expectedOutputPath);
+
+        Assert.That(arguments, Does.Contain("subtitles="));
+        Assert.That(tempFiles.Count, Is.EqualTo(1));
+        Assert.That(File.Exists(tempFiles[0]), Is.True);
+
+        var outputPath = await workspace.ProjectRenderer.RenderProjectAsync(project, deleteProjectFileAfterRender: false);
+        var info = await MediaInfoReader.ReadAsync(workspace, outputPath);
+
+        Assert.That(info.HasVideo, Is.True);
+        Assert.That(info.HasAudio, Is.True);
+    }
+
+    [Test]
     public async Task ProjectRender_ValidationRejectsMissingInputs_AndExistingOutput()
     {
         await using var workspace = new TestWorkspace();

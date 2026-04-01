@@ -24,7 +24,9 @@ public sealed class MediaProcessingService(
             throw new InvalidOperationException("Файл с таким названием уже существует.");
         }
 
-        var arguments = BuildStandardArguments(options.InputPath, outputPath, options);
+        var arguments = options.UseCustomCommand
+            ? BuildCustomCommand(options.CustomCommandTemplate, options.InputPath, outputPath)
+            : BuildStandardArguments(options.InputPath, outputPath, options);
         if (string.IsNullOrWhiteSpace(arguments))
         {
             throw new InvalidOperationException("Не удалось сформировать команду обработки.");
@@ -35,7 +37,9 @@ public sealed class MediaProcessingService(
             InputPaths = [options.InputPath],
             OutputPath = outputPath,
             Arguments = arguments,
-            Summary = $"{Path.GetFileName(options.InputPath)} -> {Path.GetFileName(outputPath)}"
+            Summary = options.UseCustomCommand
+                ? $"Custom ffmpeg: {Path.GetFileName(options.InputPath)} -> {Path.GetFileName(outputPath)}"
+                : $"{Path.GetFileName(options.InputPath)} -> {Path.GetFileName(outputPath)}"
         };
     }
 
@@ -250,6 +254,26 @@ public sealed class MediaProcessingService(
         if (!File.Exists(options.InputPath))
         {
             throw new InvalidOperationException("Файл для обработки не найден.");
+        }
+
+        if (options.UseCustomCommand)
+        {
+            if (string.IsNullOrWhiteSpace(options.CustomCommandTemplate))
+            {
+                throw new InvalidOperationException("Введите пользовательскую команду FFmpeg.");
+            }
+
+            if (!options.CustomCommandTemplate.Contains("{input}", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("Пользовательская команда должна содержать шаблон {input}.");
+            }
+
+            if (!options.CustomCommandTemplate.Contains("{output}", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException("Пользовательская команда должна содержать шаблон {output}.");
+            }
+
+            return;
         }
 
         if (options.SubtitleMode != SubtitleMode.None && string.IsNullOrWhiteSpace(options.SubtitlePath))

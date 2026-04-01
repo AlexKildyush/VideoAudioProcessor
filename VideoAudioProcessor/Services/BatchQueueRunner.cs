@@ -19,6 +19,8 @@ public sealed class BatchQueueRunner(FfmpegCommandRunner commandRunner)
             Arguments = request.Arguments,
             Summary = request.Summary,
             IsMerge = request.IsMerge,
+            TempFilesToDelete = request.TempFilesToDelete.ToList(),
+            FilesToDeleteOnSuccess = request.FilesToDeleteOnSuccess.ToList(),
             Status = BatchJobStatus.Pending
         };
     }
@@ -48,6 +50,11 @@ public sealed class BatchQueueRunner(FfmpegCommandRunner commandRunner)
             }
             else
             {
+                foreach (var path in job.FilesToDeleteOnSuccess.Where(File.Exists))
+                {
+                    File.Delete(path);
+                }
+
                 job.Status = BatchJobStatus.Completed;
             }
         }
@@ -55,6 +62,13 @@ public sealed class BatchQueueRunner(FfmpegCommandRunner commandRunner)
         {
             job.Status = BatchJobStatus.Failed;
             job.LastError = ex.Message;
+        }
+        finally
+        {
+            foreach (var path in job.TempFilesToDelete.Where(File.Exists))
+            {
+                File.Delete(path);
+            }
         }
     }
 

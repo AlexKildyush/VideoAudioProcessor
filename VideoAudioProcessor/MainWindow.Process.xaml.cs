@@ -3,7 +3,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using Microsoft.Win32;
 using VideoAudioProcessor.Services;
 
 namespace VideoAudioProcessor;
@@ -36,15 +35,9 @@ public partial class MainWindow : Window
         };
         HardwareAccelerationComboBox.SelectedIndex = 0;
 
-        SubtitleModeComboBox.ItemsSource = new[]
-        {
-            new ComboBoxItem { Content = "Без субтитров", Tag = SubtitleMode.None },
-            new ComboBoxItem { Content = "Вшить в видео", Tag = SubtitleMode.BurnIn },
-            new ComboBoxItem { Content = "Вложить как дорожку", Tag = SubtitleMode.Embed }
-        };
-        SubtitleModeComboBox.SelectedIndex = 0;
-
         Mp4RadioButton.IsChecked = true;
+        ClearOptionalProcessingFields();
+        UpdateProcessingFunctionState();
     }
 
     private void PreviewTimer_Tick(object? sender, EventArgs e)
@@ -119,16 +112,12 @@ public partial class MainWindow : Window
         }
 
         PresetDescriptionText.Text = preset.Description;
-        OutputWidthTextBox.Text = (preset.Width ?? 1920).ToString(CultureInfo.InvariantCulture);
-        OutputHeightTextBox.Text = (preset.Height ?? 1080).ToString(CultureInfo.InvariantCulture);
-
-        if (preset.Fps.HasValue)
-        {
-            FpsTextBox.Text = preset.Fps.Value.ToString(CultureInfo.InvariantCulture);
-            FpsChangeCheckBox.IsChecked = true;
-        }
+        OutputWidthTextBox.Text = preset.Width?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        OutputHeightTextBox.Text = preset.Height?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+        FpsTextBox.Text = preset.Fps?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
 
         SetOutputFormatRadio(preset.OutputFormat);
+        UpdateProcessingFunctionState();
     }
 
     private void SetOutputFormatRadio(string format)
@@ -137,20 +126,6 @@ public partial class MainWindow : Window
         Mp4RadioButton.IsChecked = format == "mp4";
         AviRadioButton.IsChecked = format == "avi";
         MkvRadioButton.IsChecked = format == "mkv";
-    }
-
-    private void BrowseSubtitle_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new OpenFileDialog
-        {
-            Filter = "Субтитры|*.srt;*.ass;*.ssa;*.vtt|Все файлы|*.*",
-            Multiselect = false
-        };
-
-        if (dialog.ShowDialog() == true)
-        {
-            SubtitlePathTextBox.Text = dialog.FileName;
-        }
     }
 
     private async void ExecuteProcessing_Click(object sender, RoutedEventArgs e)
@@ -209,49 +184,8 @@ public partial class MainWindow : Window
             return null;
         }
 
+        ValidateProcessingUiState();
         return CreateMediaProcessingService().BuildProcessingRequest(BuildProcessingOptionsFromUi(inputPath));
-    }
-
-    private string BuildStandardArguments(string inputPath, string outputPath, string subtitlePath, SubtitleMode subtitleMode, bool lossless, bool extractOpus)
-    {
-        var options = new ProcessingOptions
-        {
-            RootPath = RootPath,
-            InputPath = inputPath,
-            OutputFileName = FileNameTextBox.Text.Trim(),
-            OutputFormat = _selectedFormat,
-            SubtitlePath = subtitlePath,
-            SubtitleMode = subtitleMode,
-            HardwareAccelerationMode = GetSelectedHardwareMode(),
-            HardwareDecodeEnabled = HardwareDecodeCheckBox.IsChecked == true,
-            LosslessCopy = lossless,
-            ExtractOpus = extractOpus,
-            CropResizeEnabled = CropResizeCheckBox.IsChecked == true,
-            CropValue = CropTextBox.Text.Trim(),
-            ScaleValue = ScaleTextBox.Text.Trim(),
-            AlphaChannelEnabled = AlphaChannelCheckBox.IsChecked == true,
-            FpsChangeEnabled = FpsChangeCheckBox.IsChecked == true,
-            FpsValue = FpsTextBox.Text.Trim(),
-            Vp9Enabled = Vp9CheckBox.IsChecked == true,
-            Vp9CrfValue = Vp9CrfTextBox.Text.Trim(),
-            TwoPassEnabled = TwoPassCheckBox.IsChecked == true,
-            TwoPassBitrate = TwoPassBitrateTextBox.Text.Trim(),
-            FastPresetEnabled = FastCheckBox.IsChecked == true,
-            RemoveAudio = RemoveAudioCheckBox.IsChecked == true,
-            TrimStart = TrimStartTextBox.Text.Trim(),
-            TrimEnd = TrimEndTextBox.Text.Trim(),
-            OutputWidth = ParseIntOrDefault(OutputWidthTextBox.Text, 1920),
-            OutputHeight = ParseIntOrDefault(OutputHeightTextBox.Text, 1080)
-        };
-
-        return CreateMediaProcessingService().BuildStandardArguments(inputPath, outputPath, options);
-    }
-
-    private SubtitleMode GetSelectedSubtitleMode()
-    {
-        return SubtitleModeComboBox.SelectedItem is ComboBoxItem { Tag: SubtitleMode mode }
-            ? mode
-            : SubtitleMode.None;
     }
 
     private HardwareAccelerationMode GetSelectedHardwareMode()
@@ -259,48 +193,6 @@ public partial class MainWindow : Window
         return HardwareAccelerationComboBox.SelectedItem is ComboBoxItem { Tag: HardwareAccelerationMode mode }
             ? mode
             : HardwareAccelerationMode.None;
-    }
-
-    private async void ExecuteCustomCommand_Click(object sender, RoutedEventArgs e)
-    {
-        var fileName = FileNameTextBox.Text.Trim();
-
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            MessageBox.Show("Введите название файла.");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(RootPath))
-        {
-            MessageBox.Show("Пожалуйста, сначала установите корневую папку.");
-            return;
-        }
-
-        if (!TryGetPreviewInputPath(out var inputPath))
-        {
-            return;
-        }
-
-        var outputPath = Path.Combine(ProcessedPath, $"{fileName}.{_selectedFormat}");
-        if (File.Exists(outputPath))
-        {
-            MessageBox.Show("Файл с таким названием уже существует.");
-            return;
-        }
-
-        try
-        {
-            var processingService = CreateMediaProcessingService();
-            var command = processingService.BuildCustomCommand(CustomCommandTextBox.Text, inputPath, outputPath);
-            await processingService.ExecuteCustomCommandAsync(command);
-            RefreshProcessedList();
-            MessageBox.Show("Команда выполнена успешно!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Ошибка выполнения команды: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
     }
 
     private bool TryGetPreviewInputPath(out string inputPath)
@@ -320,6 +212,236 @@ public partial class MainWindow : Window
         }
 
         return true;
+    }
+
+    private void ProcessingOptionInput_Changed(object sender, TextChangedEventArgs e)
+    {
+        UpdateProcessingFunctionState();
+    }
+
+    private void ProcessingOptionToggle_Changed(object sender, RoutedEventArgs e)
+    {
+        UpdateProcessingFunctionState();
+    }
+
+    private void ProcessingOptionSelection_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        UpdateProcessingFunctionState();
+    }
+
+    private void ResetResolution_Click(object sender, RoutedEventArgs e)
+    {
+        OutputWidthTextBox.Clear();
+        OutputHeightTextBox.Clear();
+        UpdateProcessingFunctionState();
+    }
+
+    private void ResetTrim_Click(object sender, RoutedEventArgs e)
+    {
+        TrimStartTextBox.Clear();
+        TrimEndTextBox.Clear();
+        UpdateProcessingFunctionState();
+    }
+
+    private void ResetCropScale_Click(object sender, RoutedEventArgs e)
+    {
+        CropTextBox.Clear();
+        ScaleTextBox.Clear();
+        UpdateProcessingFunctionState();
+    }
+
+    private void ResetVp9_Click(object sender, RoutedEventArgs e)
+    {
+        Vp9CrfTextBox.Clear();
+        UpdateProcessingFunctionState();
+    }
+
+    private void ResetTwoPass_Click(object sender, RoutedEventArgs e)
+    {
+        TwoPassBitrateTextBox.Clear();
+        UpdateProcessingFunctionState();
+    }
+
+    private void ResetFps_Click(object sender, RoutedEventArgs e)
+    {
+        FpsTextBox.Clear();
+        UpdateProcessingFunctionState();
+    }
+
+    private void ResetCustomCommand_Click(object sender, RoutedEventArgs e)
+    {
+        CustomCommandTextBox.Clear();
+        UpdateProcessingFunctionState();
+    }
+
+    private void UpdateProcessingFunctionState()
+    {
+        var hasCustomCommand = HasText(CustomCommandTextBox);
+        var resolutionActive = HasText(OutputWidthTextBox) || HasText(OutputHeightTextBox);
+        var trimActive = HasText(TrimStartTextBox) || HasText(TrimEndTextBox);
+        var cropScaleActive = HasText(CropTextBox) || HasText(ScaleTextBox);
+        var vp9Active = HasText(Vp9CrfTextBox);
+        var twoPassActive = HasText(TwoPassBitrateTextBox);
+        var fpsActive = HasText(FpsTextBox);
+        var hardwareActive = GetSelectedHardwareMode() != HardwareAccelerationMode.None || HardwareDecodeCheckBox.IsChecked == true;
+        var standardActive = resolutionActive || trimActive || cropScaleActive || vp9Active || twoPassActive || fpsActive ||
+                             LosslessCopyCheckBox.IsChecked == true || FastCheckBox.IsChecked == true ||
+                             ExtractOpusCheckBox.IsChecked == true || AlphaChannelCheckBox.IsChecked == true ||
+                             RemoveAudioCheckBox.IsChecked == true || hardwareActive;
+        var losslessActive = LosslessCopyCheckBox.IsChecked == true;
+
+        ResolutionResetButton.Visibility = resolutionActive ? Visibility.Visible : Visibility.Collapsed;
+        TrimResetButton.Visibility = trimActive ? Visibility.Visible : Visibility.Collapsed;
+        CropScaleResetButton.Visibility = cropScaleActive ? Visibility.Visible : Visibility.Collapsed;
+        Vp9ResetButton.Visibility = vp9Active ? Visibility.Visible : Visibility.Collapsed;
+        TwoPassResetButton.Visibility = twoPassActive ? Visibility.Visible : Visibility.Collapsed;
+        FpsResetButton.Visibility = fpsActive ? Visibility.Visible : Visibility.Collapsed;
+        CustomCommandResetButton.Visibility = hasCustomCommand ? Visibility.Visible : Visibility.Collapsed;
+
+        var disableStandardInputs = hasCustomCommand;
+        OutputWidthTextBox.IsEnabled = !disableStandardInputs;
+        OutputHeightTextBox.IsEnabled = !disableStandardInputs;
+        TrimStartTextBox.IsEnabled = !disableStandardInputs;
+        TrimEndTextBox.IsEnabled = !disableStandardInputs;
+        LosslessCopyCheckBox.IsEnabled = !disableStandardInputs;
+        HardwareAccelerationComboBox.IsEnabled = !disableStandardInputs;
+        HardwareDecodeCheckBox.IsEnabled = !disableStandardInputs;
+        CropTextBox.IsEnabled = !disableStandardInputs;
+        ScaleTextBox.IsEnabled = !disableStandardInputs;
+        Vp9CrfTextBox.IsEnabled = !disableStandardInputs;
+        TwoPassBitrateTextBox.IsEnabled = !disableStandardInputs;
+        FastCheckBox.IsEnabled = !disableStandardInputs;
+        ExtractOpusCheckBox.IsEnabled = !disableStandardInputs;
+        AlphaChannelCheckBox.IsEnabled = !disableStandardInputs;
+        FpsTextBox.IsEnabled = !disableStandardInputs;
+        RemoveAudioCheckBox.IsEnabled = !disableStandardInputs;
+
+        CustomCommandTextBox.IsEnabled = !standardActive || hasCustomCommand;
+
+        ResolutionStatusText.Text = hasCustomCommand
+            ? "Недоступно с ручной командой"
+            : resolutionActive && !(HasText(OutputWidthTextBox) && HasText(OutputHeightTextBox))
+                ? "Нужно указать и ширину, и высоту"
+                : losslessActive && resolutionActive
+                    ? "Недоступно с Lossless cut"
+                    : string.Empty;
+
+        TrimStatusText.Text = hasCustomCommand
+            ? "Недоступно с ручной командой"
+            : string.Empty;
+
+        LosslessStatusText.Text = hasCustomCommand
+            ? "Недоступно с ручной командой"
+            : string.Empty;
+
+        CropScaleStatusText.Text = hasCustomCommand
+            ? "Недоступно с ручной командой"
+            : cropScaleActive && !(HasText(CropTextBox) && HasText(ScaleTextBox))
+                ? "Нужно указать и crop, и scale"
+                : losslessActive && cropScaleActive
+                    ? "Недоступно с Lossless cut"
+                    : string.Empty;
+
+        Vp9StatusText.Text = hasCustomCommand
+            ? "Недоступно с ручной командой"
+            : losslessActive && vp9Active
+                ? "Недоступно с Lossless cut"
+                : string.Empty;
+
+        TwoPassStatusText.Text = hasCustomCommand
+            ? "Недоступно с ручной командой"
+            : losslessActive && twoPassActive
+                ? "Недоступно с Lossless cut"
+                : string.Empty;
+
+        FpsStatusText.Text = hasCustomCommand
+            ? "Недоступно с ручной командой"
+            : losslessActive && fpsActive
+                ? "Недоступно с Lossless cut"
+                : string.Empty;
+
+        CustomCommandStatusText.Text = hasCustomCommand && standardActive
+            ? "Сбросьте другие функции, чтобы использовать ручную команду"
+            : !hasCustomCommand && standardActive
+                ? "Ручная команда недоступна, пока заданы другие функции"
+                : string.Empty;
+    }
+
+    private void ValidateProcessingUiState()
+    {
+        var hasCustomCommand = HasText(CustomCommandTextBox);
+        var resolutionActive = HasText(OutputWidthTextBox) || HasText(OutputHeightTextBox);
+        var trimActive = HasText(TrimStartTextBox) || HasText(TrimEndTextBox);
+        var cropScaleActive = HasText(CropTextBox) || HasText(ScaleTextBox);
+        var vp9Active = HasText(Vp9CrfTextBox);
+        var twoPassActive = HasText(TwoPassBitrateTextBox);
+        var fpsActive = HasText(FpsTextBox);
+        var hardwareActive = GetSelectedHardwareMode() != HardwareAccelerationMode.None || HardwareDecodeCheckBox.IsChecked == true;
+        var standardActive = resolutionActive || trimActive || cropScaleActive || vp9Active || twoPassActive || fpsActive ||
+                             LosslessCopyCheckBox.IsChecked == true || FastCheckBox.IsChecked == true ||
+                             ExtractOpusCheckBox.IsChecked == true || AlphaChannelCheckBox.IsChecked == true ||
+                             RemoveAudioCheckBox.IsChecked == true || hardwareActive;
+
+        if (string.IsNullOrWhiteSpace(FileNameTextBox.Text))
+        {
+            throw new InvalidOperationException("Введите название файла.");
+        }
+
+        if (resolutionActive && !(HasText(OutputWidthTextBox) && HasText(OutputHeightTextBox)))
+        {
+            throw new InvalidOperationException("Для разрешения нужно указать и ширину, и высоту.");
+        }
+
+        if (cropScaleActive && !(HasText(CropTextBox) && HasText(ScaleTextBox)))
+        {
+            throw new InvalidOperationException("Для функции обрезки и масштабирования нужно указать и crop, и scale.");
+        }
+
+        if (hasCustomCommand && standardActive)
+        {
+            throw new InvalidOperationException("Ручную команду FFmpeg нельзя использовать вместе с другими функциями обработки.");
+        }
+
+        if (LosslessCopyCheckBox.IsChecked == true)
+        {
+            if (resolutionActive || cropScaleActive || vp9Active || twoPassActive || fpsActive || FastCheckBox.IsChecked == true ||
+                ExtractOpusCheckBox.IsChecked == true || AlphaChannelCheckBox.IsChecked == true || RemoveAudioCheckBox.IsChecked == true)
+            {
+                throw new InvalidOperationException("Lossless cut нельзя использовать вместе с кодированием, фильтрами, изменением FPS или аудио-режимами.");
+            }
+        }
+
+        if (ExtractOpusCheckBox.IsChecked == true && RemoveAudioCheckBox.IsChecked == true)
+        {
+            throw new InvalidOperationException("Нельзя одновременно извлекать аудио в Opus и удалять аудио.");
+        }
+    }
+
+    private void ClearOptionalProcessingFields()
+    {
+        OutputWidthTextBox.Text = string.Empty;
+        OutputHeightTextBox.Text = string.Empty;
+        TrimStartTextBox.Text = string.Empty;
+        TrimEndTextBox.Text = string.Empty;
+        CropTextBox.Text = string.Empty;
+        ScaleTextBox.Text = string.Empty;
+        Vp9CrfTextBox.Text = string.Empty;
+        TwoPassBitrateTextBox.Text = string.Empty;
+        FpsTextBox.Text = string.Empty;
+        CustomCommandTextBox.Text = string.Empty;
+        LosslessCopyCheckBox.IsChecked = false;
+        HardwareAccelerationComboBox.SelectedIndex = 0;
+        HardwareDecodeCheckBox.IsChecked = false;
+        FastCheckBox.IsChecked = false;
+        ExtractOpusCheckBox.IsChecked = false;
+        AlphaChannelCheckBox.IsChecked = false;
+        RemoveAudioCheckBox.IsChecked = false;
+        PresetComboBox.SelectedIndex = 0;
+    }
+
+    private static bool HasText(TextBox textBox)
+    {
+        return !string.IsNullOrWhiteSpace(textBox.Text);
     }
 
     private ProcessingRequest? BuildLosslessMergeRequest(IReadOnlyList<string> inputPaths, string outputPath)

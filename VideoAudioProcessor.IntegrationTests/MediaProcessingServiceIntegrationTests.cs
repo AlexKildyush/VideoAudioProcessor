@@ -83,6 +83,34 @@ internal sealed class MediaProcessingServiceIntegrationTests
     }
 
     [Test]
+    public async Task BuildProcessingRequest_WithCustomCommand_CreatesExecutableRequest()
+    {
+        await using var workspace = new TestWorkspace();
+        var media = await workspace.CreateMediaSetAsync();
+
+        var request = workspace.Processing.BuildProcessingRequest(new ProcessingOptions
+        {
+            RootPath = workspace.RootPath,
+            InputPath = media.VideoWithAudioPath,
+            OutputFileName = "custom-request",
+            OutputFormat = "mp4",
+            UseCustomCommand = true,
+            CustomCommandTemplate = "-y -i \"{input}\" -t 1 -c:v libx264 -pix_fmt yuv420p -an \"{output}\""
+        });
+
+        Assert.That(request.Summary, Does.Contain("Custom ffmpeg"));
+        Assert.That(request.Arguments, Does.Contain(media.VideoWithAudioPath));
+        Assert.That(request.Arguments, Does.Contain(request.OutputPath));
+
+        await workspace.Processing.ExecuteProcessingAsync(request);
+
+        var info = await MediaInfoReader.ReadAsync(workspace, request.OutputPath);
+        Assert.That(info.HasVideo, Is.True);
+        Assert.That(info.HasAudio, Is.False);
+        Assert.That(info.Duration, Is.InRange(0.7, 1.3));
+    }
+
+    [Test]
     public async Task BuildProcessingRequest_ValidatesMissingInputAndConflicts()
     {
         await using var workspace = new TestWorkspace();
@@ -151,6 +179,28 @@ internal sealed class MediaProcessingServiceIntegrationTests
             SubtitlePath = media.SubtitlePath
         }));
         Assert.That(embedAvi?.Message, Does.Contain("AVI"));
+
+        var customWithoutInputPlaceholder = Assert.Throws<InvalidOperationException>(() => workspace.Processing.BuildProcessingRequest(new ProcessingOptions
+        {
+            RootPath = workspace.RootPath,
+            InputPath = media.VideoWithAudioPath,
+            OutputFileName = "bad-custom-input",
+            OutputFormat = "mp4",
+            UseCustomCommand = true,
+            CustomCommandTemplate = "-y -c:v libx264 \"{output}\""
+        }));
+        Assert.That(customWithoutInputPlaceholder?.Message, Does.Contain("{input}"));
+
+        var customWithoutOutputPlaceholder = Assert.Throws<InvalidOperationException>(() => workspace.Processing.BuildProcessingRequest(new ProcessingOptions
+        {
+            RootPath = workspace.RootPath,
+            InputPath = media.VideoWithAudioPath,
+            OutputFileName = "bad-custom-output",
+            OutputFormat = "mp4",
+            UseCustomCommand = true,
+            CustomCommandTemplate = "-y -i \"{input}\" -c:v libx264"
+        }));
+        Assert.That(customWithoutOutputPlaceholder?.Message, Does.Contain("{output}"));
     }
 
     [Test]

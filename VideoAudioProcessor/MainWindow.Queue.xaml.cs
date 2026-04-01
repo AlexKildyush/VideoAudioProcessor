@@ -92,6 +92,9 @@ public partial class MainWindow : Window
             PreviewSlider.Value = 0;
             PreviewCurrentTime.Text = "00:00";
             PreviewTotalTime.Text = "00:00";
+            FileNameTextBox.Text = Path.GetFileNameWithoutExtension(selectedFile);
+            ClearOptionalProcessingFields();
+            UpdateProcessingFunctionState();
 
             HideAllScreens();
             ProcessScreen.Visibility = Visibility.Visible;

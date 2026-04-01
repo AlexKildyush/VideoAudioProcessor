@@ -47,6 +47,8 @@ public sealed class ProcessingRequest
     public required string Arguments { get; init; }
     public required string Summary { get; init; }
     public bool IsMerge { get; init; }
+    public List<string> TempFilesToDelete { get; init; } = [];
+    public List<string> FilesToDeleteOnSuccess { get; init; } = [];
 }
 
 public sealed class ProcessingJob
@@ -58,6 +60,8 @@ public sealed class ProcessingJob
     public string Arguments { get; set; } = string.Empty;
     public string Summary { get; set; } = string.Empty;
     public bool IsMerge { get; set; }
+    public List<string> TempFilesToDelete { get; set; } = [];
+    public List<string> FilesToDeleteOnSuccess { get; set; } = [];
     public BatchJobStatus Status { get; set; } = BatchJobStatus.Pending;
     public string? LastError { get; set; }
 
