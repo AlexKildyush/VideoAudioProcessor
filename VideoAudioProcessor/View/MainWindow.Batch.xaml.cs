@@ -24,9 +24,8 @@ public partial class MainWindow
     {
         var pending = _processingJobs.Count(job => job.Status == BatchJobStatus.Pending);
         var running = _processingJobs.Count(job => job.Status == BatchJobStatus.Running);
-        var completed = _processingJobs.Count(job => job.Status == BatchJobStatus.Completed);
         var failed = _processingJobs.Count(job => job.Status == BatchJobStatus.Failed);
-        BatchSummaryText.Text = $"Всего: {_processingJobs.Count} | Ожидают: {pending} | Выполняются: {running} | Готово: {completed} | Ошибки: {failed}";
+        BatchSummaryText.Text = $"Всего: {_processingJobs.Count} | Ожидают: {pending} | Выполняются: {running} | Ошибки: {failed}";
     }
 
     private void AddProcessingJob(ProcessingRequest request, string jobName)
@@ -93,6 +92,10 @@ public partial class MainWindow
         if (job.Status == BatchJobStatus.Completed)
         {
             RefreshProcessedList();
+            if (job.IsProjectRender)
+            {
+                _processingJobs.Remove(job);
+            }
         }
         else if (job.Status == BatchJobStatus.Failed && !string.IsNullOrWhiteSpace(job.LastError))
         {
@@ -164,11 +167,17 @@ public partial class MainWindow
 
         try
         {
-            var processingService = CreateMediaProcessingService();
-            await RunWithWaitDialogAsync("Merge", "Выполняется lossless merge...", async () =>
+            var runner = CreateBatchQueueRunner();
+            var job = runner.CreateJob(request, "Lossless merge");
+            await RunJobWithProgressDialogAsync("Merge", job, async () =>
             {
-                await processingService.ExecuteProcessingAsync(request);
+                await runner.RunJobAsync(job);
             });
+
+            if (job.Status != BatchJobStatus.Completed)
+            {
+                throw new InvalidOperationException(job.LastError ?? "Не удалось выполнить merge.");
+            }
 
             RefreshProcessedList();
             MessageBox.Show("Файлы успешно объединены.");

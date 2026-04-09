@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace VideoAudioProcessor.Services;
 
@@ -16,8 +11,8 @@ public sealed class ProjectRenderService(
 {
     public void EnsureAudioItemsMigrated(ProjectData project)
     {
-        project.AudioItems ??= new List<ProjectAudioItem>();
-        project.SubtitleItems ??= new List<ProjectSubtitleItem>();
+        project.AudioItems ??= [];
+        project.SubtitleItems ??= [];
         if (project.AudioItems.Count == 0 && !string.IsNullOrWhiteSpace(project.AudioPath))
         {
             project.AudioItems.Add(new ProjectAudioItem
@@ -119,7 +114,9 @@ public sealed class ProjectRenderService(
             InputPaths = project.Items.Select(item => item.Path).Concat(project.AudioItems.Select(item => item.Path)).Distinct().ToList(),
             OutputPath = outputPath,
             Arguments = arguments,
-            Summary = $"Project render: {project.Name}",
+            Summary = string.Empty,
+            ExpectedDurationSeconds = EstimateProjectDuration(project),
+            IsProjectRender = true,
             TempFilesToDelete = tempFiles,
             FilesToDeleteOnSuccess = filesToDeleteOnSuccess
         };
@@ -347,5 +344,11 @@ public sealed class ProjectRenderService(
         var g = hex.Substring(2, 2);
         var b = hex.Substring(4, 2);
         return $"&H00{b}{g}{r}";
+    }
+
+    private static double? EstimateProjectDuration(ProjectData project)
+    {
+        var duration = project.Items.Sum(item => Math.Max(0.5, item.DurationSeconds));
+        return duration > 0 ? duration : null;
     }
 }

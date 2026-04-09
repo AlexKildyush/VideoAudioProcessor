@@ -1,6 +1,8 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media;
 using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
@@ -210,6 +212,113 @@ private void ShowProcessed_Click(object sender, RoutedEventArgs e)
         {
             waitingWindow.Close();
         }
+    }
+
+    private async Task RunJobWithProgressDialogAsync(string title, ProcessingJob job, Func<Task> action)
+    {
+        var waitingWindow = new Window
+        {
+            Title = title,
+            Width = 460,
+            Height = 260,
+            ResizeMode = ResizeMode.NoResize,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner,
+            WindowStyle = WindowStyle.ToolWindow,
+            Owner = this,
+            Background = ThemeBrush("SurfaceStrongBrush"),
+            Content = BuildJobProgressContent(job)
+        };
+
+        waitingWindow.Show();
+        await Task.Yield();
+
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            waitingWindow.Close();
+        }
+    }
+
+    private FrameworkElement BuildJobProgressContent(ProcessingJob job)
+    {
+        var panel = new StackPanel
+        {
+            Margin = new Thickness(18)
+        };
+
+        panel.Children.Add(CreateBoundTextBlock(nameof(ProcessingJob.Name), "TextPrimaryBrush", 18, FontWeights.Bold));
+        panel.Children.Add(CreateBoundTextBlock(nameof(ProcessingJob.StageText), "StatusBrush", margin: new Thickness(0, 10, 0, 0)));
+
+        var progressBar = new ProgressBar
+        {
+            Height = 12,
+            Maximum = 100,
+            Margin = new Thickness(0, 10, 0, 0)
+        };
+        progressBar.SetBinding(RangeBase.ValueProperty, new Binding(nameof(ProcessingJob.ProgressValue)) { Mode = BindingMode.OneWay });
+        panel.Children.Add(progressBar);
+
+        panel.Children.Add(CreateBoundTextBlock(nameof(ProcessingJob.ProgressText), "TextPrimaryBrush", margin: new Thickness(0, 8, 0, 0)));
+        panel.Children.Add(CreateBoundTextBlock(nameof(ProcessingJob.TimingText), "TextSecondaryBrush", margin: new Thickness(0, 6, 0, 0)));
+        panel.Children.Add(CreateBoundTextBlock(nameof(ProcessingJob.SpeedText), "TextSecondaryBrush", margin: new Thickness(0, 6, 0, 0), collapseWhenEmpty: true));
+        panel.Children.Add(CreateBoundTextBlock(nameof(ProcessingJob.Summary), "TextSecondaryBrush", margin: new Thickness(0, 10, 0, 0), wrap: true, collapseWhenEmpty: true));
+
+        panel.DataContext = job;
+        return panel;
+    }
+
+    private TextBlock CreateBoundTextBlock(
+        string path,
+        string brushKey,
+        double? fontSize = null,
+        FontWeight? fontWeight = null,
+        Thickness? margin = null,
+        bool wrap = false,
+        bool collapseWhenEmpty = false)
+    {
+        var textBlock = new TextBlock
+        {
+            Foreground = ThemeBrush(brushKey),
+            Margin = margin ?? new Thickness(0),
+            TextWrapping = wrap ? TextWrapping.Wrap : TextWrapping.NoWrap
+        };
+
+        if (fontSize.HasValue)
+        {
+            textBlock.FontSize = fontSize.Value;
+        }
+
+        if (fontWeight.HasValue)
+        {
+            textBlock.FontWeight = fontWeight.Value;
+        }
+
+        textBlock.SetBinding(TextBlock.TextProperty, new Binding(path) { Mode = BindingMode.OneWay });
+
+        if (collapseWhenEmpty)
+        {
+            textBlock.Style = new Style(typeof(TextBlock))
+            {
+                Setters =
+                {
+                    new Setter(VisibilityProperty, Visibility.Visible)
+                },
+                Triggers =
+                {
+                    new DataTrigger
+                    {
+                        Binding = new Binding(path),
+                        Value = string.Empty,
+                        Setters = { new Setter(VisibilityProperty, Visibility.Collapsed) }
+                    }
+                }
+            };
+        }
+
+        return textBlock;
     }
 
     private Brush ThemeBrush(string key)

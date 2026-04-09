@@ -32,14 +32,20 @@ internal sealed class BatchQueueRunnerIntegrationTests
         await workspace.BatchRunner.RunAllAsync([goodJob, failingJob]);
 
         Assert.That(goodJob.Status, Is.EqualTo(BatchJobStatus.Completed));
+        Assert.That(goodJob.StageText, Is.EqualTo("Завершено"));
+        Assert.That(goodJob.ProgressPercent, Is.EqualTo(100).Within(0.001));
+        Assert.That(goodJob.EstimatedRemaining, Is.EqualTo(TimeSpan.Zero));
         Assert.That(File.Exists(goodRequest.OutputPath), Is.True);
+
         Assert.That(failingJob.Status, Is.EqualTo(BatchJobStatus.Failed));
+        Assert.That(failingJob.StageText, Is.EqualTo("Ошибка"));
         Assert.That(string.IsNullOrWhiteSpace(failingJob.LastError), Is.False);
 
         failingJob.Arguments = goodRequest.Arguments.Replace("batch-good.mp4", "batch-fixed.mp4");
         await workspace.BatchRunner.RunJobAsync(failingJob);
 
         Assert.That(failingJob.Status, Is.EqualTo(BatchJobStatus.Completed));
+        Assert.That(failingJob.ProgressPercent, Is.EqualTo(100).Within(0.001));
         Assert.That(File.Exists(workspace.Storage.GetProcessedOutputPath("batch-fixed", "mp4")), Is.True);
     }
 
@@ -63,6 +69,9 @@ internal sealed class BatchQueueRunnerIntegrationTests
         await workspace.BatchRunner.RunJobAsync(job);
 
         Assert.That(job.Status, Is.EqualTo(BatchJobStatus.Completed));
+        Assert.That(job.StageText, Is.EqualTo("Завершено"));
+        Assert.That(job.Elapsed, Is.GreaterThan(TimeSpan.Zero));
+        Assert.That(job.ProgressPercent, Is.EqualTo(100).Within(0.001));
         Assert.That(File.Exists(request.OutputPath), Is.True);
 
         var info = await MediaInfoReader.ReadAsync(workspace, request.OutputPath);
@@ -116,6 +125,9 @@ internal sealed class BatchQueueRunnerIntegrationTests
         await workspace.BatchRunner.RunJobAsync(job);
 
         Assert.That(job.Status, Is.EqualTo(BatchJobStatus.Completed));
+        Assert.That(job.ProgressPercent, Is.EqualTo(100).Within(0.001));
+        Assert.That(job.ExpectedDurationSeconds, Is.GreaterThan(0));
+        Assert.That(job.IsProjectRender, Is.True);
         Assert.That(File.Exists(request.OutputPath), Is.True);
         Assert.That(tempFiles.All(path => !File.Exists(path)), Is.True);
     }
@@ -161,6 +173,7 @@ internal sealed class BatchQueueRunnerIntegrationTests
         await workspace.BatchRunner.RunJobAsync(job);
 
         Assert.That(job.Status, Is.EqualTo(BatchJobStatus.Failed));
+        Assert.That(job.StageText, Is.EqualTo("Ошибка"));
         Assert.That(job.LastError ?? string.Empty, Does.Contain("существует"));
     }
 }

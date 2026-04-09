@@ -60,5 +60,6 @@
 
     <ItemGroup>
       <Resource Include="Assets\Images\about-background.jpg" />
+      <Resource Include="Assets\Images\icon.png" />
     </ItemGroup>
 </Project>

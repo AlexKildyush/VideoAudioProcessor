@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:VideoAudioProcessor"
         mc:Ignorable="d"
         Title="Video Audio Processor" Height="600" Width="900"
+        Icon="/Assets/Images/icon.png"
         WindowStartupLocation="CenterScreen">
     <Grid Background="{DynamicResource WindowBackgroundBrush}">
         <DockPanel>
@@ -399,7 +400,6 @@
                             <ProgressBar IsIndeterminate="True" Width="120" Height="12"/>
                             <TextBlock Text="Сохранение..." Foreground="{DynamicResource TextSecondaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
-                        <Button Content="Назад к списку" Click="BackToProjectList_Click" Height="35" Margin="0,10,0,0"/>
                     </StackPanel>
                 </Grid>
 
@@ -412,8 +412,41 @@
                     <StackPanel Grid.Row="0" Margin="20">
                         <TextBlock Text="Очередь задач" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
                         <TextBlock x:Name="BatchSummaryText" Text="Всего: 0" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10"/>
-                        <ListBox x:Name="BatchJobsListBox" DisplayMemberPath="DisplayName" Height="260"/>
-                        <TextBlock Text="Задачи выполняются через ffmpeg и сохраняют результат в папку Processed." Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                        <ListBox x:Name="BatchJobsListBox" Height="260" BorderThickness="0" Background="Transparent">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource SurfaceCardStyle}" Padding="12" Margin="0,0,0,10">
+                                        <StackPanel>
+                                            <DockPanel LastChildFill="False">
+                                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" TextTrimming="CharacterEllipsis" Width="400"/>
+                                                <Border Background="{DynamicResource ToggleSurfaceCheckedBrush}" CornerRadius="10" Padding="8,2" HorizontalAlignment="Right">
+                                                    <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                </Border>
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding StageText}" Foreground="{DynamicResource StatusBrush}" Margin="0,8,0,0"/>
+                                            <ProgressBar Value="{Binding ProgressValue, Mode=OneWay}" Maximum="100" Height="10" Margin="0,8,0,0"/>
+                                            <DockPanel Margin="0,8,0,0">
+                                                <TextBlock Text="{Binding ProgressText}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                <TextBlock Text="{Binding SpeedText}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right"/>
+                                            </DockPanel>
+                                            <TextBlock Text="{Binding TimingText}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding Summary}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,6,0,0" TextWrapping="Wrap">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Summary}" Value="">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </StackPanel>
 
                     <WrapPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,10,0,20">

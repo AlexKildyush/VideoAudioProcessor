@@ -144,11 +144,17 @@ public partial class MainWindow : Window
 
         try
         {
-            var processingService = CreateMediaProcessingService();
-            await RunWithWaitDialogAsync("Обработка", "Выполняется ffmpeg...", async () =>
+            var runner = CreateBatchQueueRunner();
+            var job = runner.CreateJob(request, $"Обработка: {Path.GetFileNameWithoutExtension(request.OutputPath)}");
+            await RunJobWithProgressDialogAsync("Обработка", job, async () =>
             {
-                await processingService.ExecuteProcessingAsync(request);
+                await runner.RunJobAsync(job);
             });
+
+            if (job.Status != BatchJobStatus.Completed)
+            {
+                throw new InvalidOperationException(job.LastError ?? "Не удалось выполнить обработку.");
+            }
 
             RefreshProcessedList();
             MessageBox.Show("Файл успешно обработан!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);

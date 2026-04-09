@@ -17,19 +17,16 @@ public partial class MainWindow : Window
                 request = await Task.Run(() => renderService.BuildRenderRequest(project));
             });
 
-            await RunWithWaitDialogAsync("Рендер", "Выполняется ffmpeg...", async () =>
+            var runner = CreateBatchQueueRunner();
+            var job = runner.CreateJob(request!, $"Рендер проекта: {Path.GetFileNameWithoutExtension(request!.OutputPath)}");
+            await RunJobWithProgressDialogAsync("Рендер проекта", job, async () =>
             {
-                await CreateMediaProcessingService().ExecuteProcessingAsync(request!);
+                await runner.RunJobAsync(job);
             });
 
-            foreach (var path in request!.FilesToDeleteOnSuccess.Where(File.Exists))
+            if (job.Status != BatchJobStatus.Completed)
             {
-                File.Delete(path);
-            }
-
-            foreach (var path in request.TempFilesToDelete.Where(File.Exists))
-            {
-                File.Delete(path);
+                throw new InvalidOperationException(job.LastError ?? "Не удалось сохранить проект.");
             }
 
             MessageBox.Show("Проект успешно сохранен в обработанные!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -75,10 +72,13 @@ public partial class MainWindow : Window
             ProcessingRequest? request = null;
             await RunWithWaitDialogAsync("Очередь", "Подготавливаем проект для очереди...", async () =>
             {
-                request = await Task.Run(() => CreateProjectRenderService().BuildRenderRequest(_currentProject, deleteProjectFileAfterRender: false));
+                request = await Task.Run(() => CreateProjectRenderService().BuildRenderRequest(_currentProject, deleteProjectFileAfterRender: true));
             });
 
-            AddProcessingJob(request!, $"Рендер проекта {Path.GetFileNameWithoutExtension(request!.OutputPath)}");
+            AddProcessingJob(request!, $"Рендер проекта: {Path.GetFileNameWithoutExtension(request!.OutputPath)}");
+            CreateStorageService().DeleteProject(_currentProject.Type, _currentProject.Name);
+            RefreshProjectList();
+            ShowProjectList(_currentProject.Type);
             MessageBox.Show("Проект добавлен в очередь.", "Очередь", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)
