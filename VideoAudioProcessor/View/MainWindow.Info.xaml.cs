@@ -4,11 +4,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using VideoAudioProcessor.Services;
 
-namespace VideoAudioProcessor;
+namespace VideoAudioProcessor.View;
 
 public partial class MainWindow
 {
-    private readonly InformationSearchService _informationSearchService = new();
     private readonly ObservableCollection<InformationSearchResult> _informationResults = new();
 
     private void InitializeInformation()
@@ -21,8 +20,7 @@ public partial class MainWindow
 
     private void ShowInformationScreen()
     {
-        HideAllScreens();
-        InfoScreen.Visibility = Visibility.Visible;
+        ShowScreen(ViewModel.AppScreen.Information);
     }
 
     private void SearchInformation_Click(object sender, RoutedEventArgs e)

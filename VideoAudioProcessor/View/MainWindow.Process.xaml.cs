@@ -3,9 +3,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using VideoAudioProcessor.Services;
 
-namespace VideoAudioProcessor;
+namespace VideoAudioProcessor.View;
 
 public partial class MainWindow : Window
 {

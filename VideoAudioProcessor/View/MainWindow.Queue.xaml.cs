@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
-namespace VideoAudioProcessor;
+namespace VideoAudioProcessor.View;
 
 public partial class MainWindow : Window
 {
@@ -96,8 +96,7 @@ public partial class MainWindow : Window
             ClearOptionalProcessingFields();
             UpdateProcessingFunctionState();
 
-            HideAllScreens();
-            ProcessScreen.Visibility = Visibility.Visible;
+            ShowScreen(ViewModel.AppScreen.Process);
         }
         catch (Exception ex)
         {

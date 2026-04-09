@@ -3,9 +3,8 @@ using System.Text;
 
 namespace VideoAudioProcessor.Services;
 
-public sealed class InformationSearchService
+public sealed class InformationSearchService(InformationIndexStorageService storage)
 {
-    private readonly InformationIndexStorageService _storage = new();
     private InformationIndexDocument? _cachedIndex;
 
     public InformationIndexDocument EnsureIndex()
@@ -15,9 +14,9 @@ public sealed class InformationSearchService
             return _cachedIndex;
         }
 
-        _cachedIndex = _storage.Load() ?? new InformationIndexDocument
+        _cachedIndex = storage.Load() ?? new InformationIndexDocument
         {
-            StoragePath = _storage.IndexPath
+            StoragePath = storage.IndexPath
         };
 
         return _cachedIndex;

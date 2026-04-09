@@ -8,9 +8,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="..\VideoAudioProcessor\MediaFormats.cs" Link="MediaFormats.cs" />
-        <Compile Include="..\VideoAudioProcessor\ProcessingModels.cs" Link="ProcessingModels.cs" />
-        <Compile Include="..\VideoAudioProcessor\ProjectModels.cs" Link="ProjectModels.cs" />
+        <Compile Include="..\VideoAudioProcessor\Model\Domain\MediaFormats.cs" Link="MediaFormats.cs" />
+        <Compile Include="..\VideoAudioProcessor\Model\Domain\ProcessingModels.cs" Link="ProcessingModels.cs" />
+        <Compile Include="..\VideoAudioProcessor\Model\Domain\ProjectModels.cs" Link="ProjectModels.cs" />
         <Compile Include="..\VideoAudioProcessor\Services\*.cs" Link="Services\%(Filename)%(Extension)" />
     </ItemGroup>
 

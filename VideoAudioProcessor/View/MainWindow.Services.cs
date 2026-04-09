@@ -1,10 +1,17 @@
+using VideoAudioProcessor.Infrastructure.Configuration;
+using VideoAudioProcessor.Infrastructure.Theming;
 using VideoAudioProcessor.Services;
+using VideoAudioProcessor.ViewModel;
 
-namespace VideoAudioProcessor;
+namespace VideoAudioProcessor.View;
 
 public partial class MainWindow
 {
-    private readonly FfmpegCommandRunner _commandRunner = new();
+    private readonly IAppSettingsService _appSettings;
+    private readonly FfmpegCommandRunner _commandRunner;
+    private readonly InformationSearchService _informationSearchService;
+    private readonly IThemeService _themeService;
+    private readonly MainWindowViewModel _viewModel;
 
     private TrackStorageService CreateStorageService() => new(RootPath);
 

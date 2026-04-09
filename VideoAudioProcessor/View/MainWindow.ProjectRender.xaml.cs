@@ -1,8 +1,7 @@
 using System.IO;
-using System.Linq;
 using System.Windows;
 
-namespace VideoAudioProcessor;
+namespace VideoAudioProcessor.View;
 
 public partial class MainWindow : Window
 {

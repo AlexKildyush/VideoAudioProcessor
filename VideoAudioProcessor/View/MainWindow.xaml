@@ -1,4 +1,4 @@
-﻿<Window x:Class="VideoAudioProcessor.MainWindow"
+﻿<Window x:Class="VideoAudioProcessor.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,79 +7,10 @@
         mc:Ignorable="d"
         Title="Video Audio Processor" Height="600" Width="900"
         WindowStartupLocation="CenterScreen">
-    <Window.Resources>
-        <ImageBrush x:Key="AboutBackgroundBrush"
-                    ImageSource="/Assets/Images/about-background.jpg"
-                    Stretch="UniformToFill"
-                    Opacity="0.32"/>
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="#FF252526"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF3F3F46"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="Padding" Value="8 4"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF3E3E40"/>
-                </Trigger>
-                <Trigger Property="IsPressed" Value="True">
-                    <Setter Property="Background" Value="#FF007ACC"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style TargetType="Menu">
-            <Setter Property="Background" Value="#FF252526"/>
-            <Setter Property="Foreground" Value="White"/>
-        </Style>
-
-        <Style TargetType="MenuItem">
-            <Setter Property="Background" Value="#FF252526"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF3F3F46"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF3E3E40"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style TargetType="ListBox">
-            <Setter Property="Background" Value="#FF252526"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Setter Property="BorderBrush" Value="#FF3F3F46"/>
-        </Style>
-
-        <Style TargetType="ListBoxItem">
-            <Setter Property="Background" Value="#FF252526"/>
-            <Setter Property="Foreground" Value="White"/>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="#FF3E3E40"/>
-                </Trigger>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="#FF007ACC"/>
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style TargetType="Slider">
-            <Setter Property="Background" Value="#FF252526"/>
-            <Setter Property="Foreground" Value="#FF007ACC"/>
-            <Setter Property="BorderBrush" Value="#FF3F3F46"/>
-            <Setter Property="Minimum" Value="0"/>
-            <Setter Property="Maximum" Value="100"/>
-            <Setter Property="TickFrequency" Value="1"/>
-            <Setter Property="IsMoveToPointEnabled" Value="True"/>
-            <Setter Property="Margin" Value="10,0"/>
-            <Setter Property="Height" Value="20"/>
-        </Style>
-    </Window.Resources>
-
-    <Grid Background="#FF1E1E1E">
+    <Grid Background="{DynamicResource WindowBackgroundBrush}">
         <DockPanel>
             <!-- Главное меню -->
-            <Menu DockPanel.Dock="Top" Height="25">
+            <Menu DockPanel.Dock="Top" Height="36">
                 <!-- Меню Файл -->
                 <MenuItem Header="Файл">
                     <MenuItem Header="Загрузить" Click="LoadFile_Click"/>
@@ -95,15 +26,17 @@
                 <!-- Меню Проекты -->
                 <MenuItem Header="Проекты" Click="ShowVideoCollageProjects_Click"/>
 
+                <MenuItem Header="Настройки" Click="OpenSettings_Click"/>
+
                 <!-- Информация -->
                 <MenuItem Header="Информация" Click="ShowAbout_Click"/>
             </Menu>
 
             <!-- Основное содержимое -->
             <Grid x:Name="MainContent">
-                <Grid x:Name="InfoScreen" Visibility="Visible">
+                <Grid x:Name="InfoScreen" Visibility="{Binding IsInformationScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Border Background="{StaticResource AboutBackgroundBrush}" />
-                    <Border Background="#BF141414" />
+                    <Border Background="{DynamicResource InfoOverlayBrush}" />
                     <Grid Margin="24">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -117,7 +50,7 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,16">
-                            <TextBlock Text="Информация" Foreground="White" FontSize="24" FontWeight="Bold"/>
+                            <TextBlock Text="Информация" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="24" FontWeight="Bold"/>
                         </StackPanel>
 
                         <Grid Grid.Row="1" Grid.ColumnSpan="3" Margin="0,0,0,16">
@@ -135,40 +68,24 @@
                             <Button Grid.Column="2" Content="Показать всё" Click="ShowAllInformation_Click" Width="130" Height="38" Margin="12,0,0,0"/>
                         </Grid>
 
-                        <Border Grid.Row="2" Grid.Column="0" Background="#CC1F1F1F" BorderBrush="#FF3F3F46" BorderThickness="1" CornerRadius="6" Padding="12">
+                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource SurfaceCardStyle}" Padding="12">
                             <DockPanel>
-                                <TextBlock x:Name="InformationResultCountText" DockPanel.Dock="Top" Text="Найдено результатов: 0" Foreground="LightGray" Margin="0,0,0,10"/>
+                                <TextBlock x:Name="InformationResultCountText" DockPanel.Dock="Top" Text="Найдено результатов: 0" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10"/>
                                 <ListBox x:Name="InformationResultsListBox"
                                          SelectionChanged="InformationResultsListBox_SelectionChanged"
                                          BorderThickness="0"
-                                         Background="Transparent">
-                                    <ListBox.ItemTemplate>
-                                        <DataTemplate>
-                                            <Border Margin="0,0,0,10" Padding="10" Background="#402F2F2F" CornerRadius="4">
-                                                <StackPanel>
-                                                    <DockPanel>
-                                                        <TextBlock Text="{Binding Title}" Foreground="White" FontWeight="Bold"/>
-                                                        <Border DockPanel.Dock="Right" Background="#FF007ACC" CornerRadius="4" Padding="6,2" Margin="8,0,0,0">
-                                                            <TextBlock Text="{Binding Category}" Foreground="White" FontSize="11"/>
-                                                        </Border>
-                                                    </DockPanel>
-                                                    <TextBlock Text="{Binding Location}" Foreground="#FFE9C46A" Margin="0,6,0,0" TextWrapping="Wrap"/>
-                                                    <TextBlock Text="{Binding ShortText}" Foreground="LightGray" Margin="0,6,0,0" TextWrapping="Wrap" MaxHeight="54"/>
-                                                </StackPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ListBox.ItemTemplate>
-                                </ListBox>
+                                         Background="Transparent"
+                                         ItemTemplate="{StaticResource InformationResultItemTemplate}" />
                             </DockPanel>
                         </Border>
 
-                        <Border Grid.Row="2" Grid.Column="2" Background="#CC1F1F1F" BorderBrush="#FF3F3F46" BorderThickness="1" CornerRadius="6" Padding="18">
+                        <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource SurfaceCardStyle}" Padding="18">
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel>
-                                    <TextBlock x:Name="InformationTitleText" Text="Описание функции" Foreground="White" FontSize="20" FontWeight="Bold" TextWrapping="Wrap"/>
-                                    <TextBlock x:Name="InformationLocationText" Foreground="#FFE9C46A" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="InformationTitleText" Text="Описание функции" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="InformationLocationText" Foreground="{DynamicResource StatusBrush}" Margin="0,10,0,0" TextWrapping="Wrap"/>
                                     <Separator Margin="0,12,0,12"/>
-                                    <TextBlock x:Name="InformationFullText" Foreground="White" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="InformationFullText" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap"/>
                                 </StackPanel>
                             </ScrollViewer>
                         </Border>
@@ -176,7 +93,7 @@
                 </Grid>
 
                 <!-- Экран очереди -->
-                <Grid x:Name="QueueScreen" Visibility="Collapsed">
+                <Grid x:Name="QueueScreen" Visibility="{Binding IsQueueScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="5"/>
@@ -222,9 +139,9 @@
 
                         <!-- Временные метки -->
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock x:Name="CurrentTimeText" Text="00:00" Foreground="White" Margin="5"/>
-                            <TextBlock Text="/" Foreground="White" Margin="5"/>
-                            <TextBlock x:Name="TotalTimeText" Text="00:00" Foreground="White" Margin="5"/>
+                            <TextBlock x:Name="CurrentTimeText" Text="00:00" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
+                            <TextBlock Text="/" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
+                            <TextBlock x:Name="TotalTimeText" Text="00:00" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
                         </StackPanel>
 
                         <!-- Элементы управления -->
@@ -238,12 +155,12 @@
                         <TextBlock x:Name="PlayerStatus" Grid.Row="0" Grid.RowSpan="4"
                                    Text="Выберите файл для воспроизведения"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="White" TextWrapping="Wrap"/>
+                                   Foreground="{DynamicResource PlayerTextBrush}" TextWrapping="Wrap"/>
                     </Grid>
                 </Grid>
 
                 <!-- Экран обработанных файлов -->
-                <Grid x:Name="ProcessedScreen" Visibility="Collapsed">
+                <Grid x:Name="ProcessedScreen" Visibility="{Binding IsProcessedScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="5"/>
@@ -292,9 +209,9 @@
                                 IsMoveToPointEnabled="True"/>
 
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock x:Name="ProcessedCurrentTimeText" Text="00:00" Foreground="White" Margin="5"/>
-                            <TextBlock Text="/" Foreground="White" Margin="5"/>
-                            <TextBlock x:Name="ProcessedTotalTimeText" Text="00:00" Foreground="White" Margin="5"/>
+                            <TextBlock x:Name="ProcessedCurrentTimeText" Text="00:00" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
+                            <TextBlock Text="/" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
+                            <TextBlock x:Name="ProcessedTotalTimeText" Text="00:00" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
                         </StackPanel>
 
                         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
@@ -306,19 +223,19 @@
                         <TextBlock x:Name="ProcessedPlayerStatus" Grid.Row="0" Grid.RowSpan="4"
                                    Text="Выберите файл для воспроизведения"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   Foreground="White" TextWrapping="Wrap"/>
+                                   Foreground="{DynamicResource PlayerTextBrush}" TextWrapping="Wrap"/>
                     </Grid>
                 </Grid>
 
                 <!-- Экран списка проектов -->
-                <Grid x:Name="ProjectListScreen" Visibility="Collapsed">
+                <Grid x:Name="ProjectListScreen" Visibility="{Binding IsProjectsScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Margin="20">
-                        <TextBlock x:Name="ProjectListTitle" Text="Проекты" Foreground="White" FontSize="16" Margin="0,0,0,10"/>
+                        <TextBlock x:Name="ProjectListTitle" Text="Проекты" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="16" Margin="0,0,0,10"/>
                         <ListBox x:Name="ProjectsListBox" MouseDoubleClick="ProjectsListBox_MouseDoubleClick">
                             <ListBox.ContextMenu>
                                 <ContextMenu>
@@ -336,31 +253,31 @@
                 </Grid>
 
                 <!-- Экран формы создания проекта -->
-                <Grid x:Name="ProjectEditorScreen" Visibility="Collapsed">
+                <Grid x:Name="ProjectEditorScreen" Visibility="{Binding IsProjectEditorScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="3*"/>
                         <ColumnDefinition Width="2*"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Margin="20">
-                        <TextBlock x:Name="ProjectEditorTitle" Text="Проект" Foreground="White" FontSize="16" Margin="0,0,0,10"/>
+                        <TextBlock x:Name="ProjectEditorTitle" Text="Проект" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="16" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <TextBlock Text="Название проекта:" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                            <TextBlock Text="Название проекта:" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                             <TextBox x:Name="ProjectNameTextBox" Width="260"/>
                             <Button Content="Переименовать" Click="RenameProject_Click" Width="140" Margin="10,0,0,0"/>
                         </StackPanel>
 
-                        <TextBlock Text="Таймлайн (время)" Foreground="White" FontWeight="Bold" Margin="0,0,0,5"/>
-                        <Border Background="#FF2A2A2A" BorderBrush="#FF3F3F46" BorderThickness="1" Padding="8" Margin="0,0,0,8">
+                        <TextBlock Text="Таймлайн (время)" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" Margin="0,0,0,5"/>
+                        <Border Background="{DynamicResource TimelineSurfaceBrush}" BorderBrush="{DynamicResource TimelineLaneBorderBrush}" BorderThickness="1" Padding="8" Margin="0,0,0,8" CornerRadius="10">
                             <StackPanel>
-                                <TextBlock x:Name="TimelineScaleText" Text="0 сек" Foreground="LightGray" Margin="0,0,0,6"/>
+                                <TextBlock x:Name="TimelineScaleText" Text="0 сек" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,6"/>
                                 <Grid Margin="0,0,0,6">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="150"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Видео / фото дорожка" Foreground="White" VerticalAlignment="Center"/>
-                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="#FF4A4A4A" Padding="4" Background="#FF1F1F1F">
+                                    <TextBlock Text="Видео / фото дорожка" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="{DynamicResource TimelineLaneBorderBrush}" Padding="4" Background="{DynamicResource TimelineLaneBrush}" CornerRadius="8">
                                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                                             <StackPanel x:Name="VideoTimelinePanel" Orientation="Horizontal"/>
                                         </ScrollViewer>
@@ -371,8 +288,8 @@
                                         <ColumnDefinition Width="150"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Аудио дорожка" Foreground="White" VerticalAlignment="Center"/>
-                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="#FF4A4A4A" Padding="4" Background="#FF1F1F1F">
+                                    <TextBlock Text="Аудио дорожка" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="{DynamicResource TimelineLaneBorderBrush}" Padding="4" Background="{DynamicResource TimelineLaneBrush}" CornerRadius="8">
                                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                                             <StackPanel x:Name="AudioTimelinePanel" Orientation="Horizontal"/>
                                         </ScrollViewer>
@@ -383,8 +300,8 @@
                                         <ColumnDefinition Width="150"/>
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Субтитры" Foreground="White" VerticalAlignment="Center"/>
-                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="#FF4A4A4A" Padding="4" Background="#FF1F1F1F">
+                                    <TextBlock Text="Субтитры" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+                                    <Border Grid.Column="1" BorderThickness="1" BorderBrush="{DynamicResource TimelineLaneBorderBrush}" Padding="4" Background="{DynamicResource TimelineLaneBrush}" CornerRadius="8">
                                         <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
                                             <StackPanel x:Name="SubtitleTimelinePanel" Orientation="Horizontal"/>
                                         </ScrollViewer>
@@ -409,43 +326,43 @@
                             <Button Content="Фото с компьютера" Click="AddImageFromComputer_Click" Width="180" Margin="10,0,0,0"/>
                         </WrapPanel>
 
-                        <TextBlock Text="Аудио" Foreground="White" FontWeight="Bold" Margin="0,20,0,5"/>
-                        <TextBlock x:Name="SelectedAudioText" Text="Аудио не добавлено" Foreground="LightGray" Margin="0,0,0,10"/>
+                        <TextBlock Text="Аудио" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" Margin="0,20,0,5"/>
+                        <TextBlock x:Name="SelectedAudioText" Text="Аудио не добавлено" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Horizontal">
                             <Button Content="Добавить аудио из базы" Click="SelectAudioFromBase_Click" Width="170"/>
                             <Button Content="Добавить аудио с компьютера" Click="SelectAudioFromComputer_Click" Width="200" Margin="10,0,0,0"/>
                             <Button Content="Очистить аудио" Click="ClearAudio_Click" Width="130" Margin="10,0,0,0"/>
                         </StackPanel>
-                        <TextBlock Text="Аудио воспроизводится по очереди, с плавным входом/затуханием у каждого трека" Foreground="LightGray" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="Аудио воспроизводится по очереди, с плавным входом/затуханием у каждого трека" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0" TextWrapping="Wrap"/>
 
-                        <CheckBox x:Name="UseVideoAudioCheckBox" Content="Использовать аудио из видео" Foreground="White" Margin="0,15,0,0" Checked="UseVideoAudioCheckBox_Changed" Unchecked="UseVideoAudioCheckBox_Changed"/>
+                        <CheckBox x:Name="UseVideoAudioCheckBox" Content="Использовать аудио из видео" Margin="0,15,0,0" Checked="UseVideoAudioCheckBox_Changed" Unchecked="UseVideoAudioCheckBox_Changed"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Margin="20">
-                        <TextBlock Text="Настройки проекта" Foreground="White" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <TextBlock Text="Настройки проекта" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" Margin="0,0,0,10"/>
 
-                        <TextBlock Text="Формат вывода" Foreground="White"/>
+                        <TextBlock Text="Формат вывода" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <ComboBox x:Name="ProjectOutputFormatComboBox" Margin="0,5,0,15">
                             <ComboBoxItem Content="mp4"/>
                             <ComboBoxItem Content="mkv"/>
                             <ComboBoxItem Content="avi"/>
                         </ComboBox>
 
-                        <TextBlock Text="Разрешение (Ш x В)" Foreground="White"/>
+                        <TextBlock Text="Разрешение (Ш x В)" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <StackPanel Orientation="Horizontal" Margin="0,5,0,15">
                             <TextBox x:Name="ProjectWidthTextBox" Width="80" Text="1920"/>
-                            <TextBlock Text="x" Foreground="White" Margin="5,0"/>
+                            <TextBlock Text="x" Foreground="{DynamicResource TextPrimaryBrush}" Margin="5,0"/>
                             <TextBox x:Name="ProjectHeightTextBox" Width="80" Text="1080"/>
                         </StackPanel>
 
-                        <TextBlock x:Name="SlideDurationLabel" Text="Длительность слайда (сек.)" Foreground="White"/>
+                        <TextBlock x:Name="SlideDurationLabel" Text="Длительность слайда (сек.)" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <TextBox x:Name="SlideDurationTextBox" Width="80" Text="3" Margin="0,5,0,15"/>
 
-                        <TextBlock Text="Редактор субтитров" Foreground="White" FontWeight="Bold" Margin="0,10,0,10"/>
-                        <TextBlock Text="Текст" Foreground="White"/>
+                        <TextBlock Text="Редактор субтитров" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" Margin="0,10,0,10"/>
+                        <TextBlock Text="Текст" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <TextBox x:Name="SubtitleTextBox" Height="70" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Margin="0,5,0,10"/>
 
-                        <TextBlock Text="Время показа (сек.)" Foreground="White"/>
+                        <TextBlock Text="Время показа (сек.)" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <Grid Margin="0,5,0,10">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -456,7 +373,7 @@
                             <TextBox x:Name="SubtitleEndTextBox" Grid.Column="2"/>
                         </Grid>
 
-                        <TextBlock Text="Плавная смена / Цвет / Размер" Foreground="White"/>
+                        <TextBlock Text="Плавная смена / Цвет / Размер" Foreground="{DynamicResource TextPrimaryBrush}"/>
                         <Grid Margin="0,5,0,15">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -480,23 +397,23 @@
                         <Button Content="В очередь" Click="AddProjectRenderToQueue_Click" Height="38" Margin="0,10,0,0"/>
                         <StackPanel x:Name="SaveProgressPanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,8,0,0">
                             <ProgressBar IsIndeterminate="True" Width="120" Height="12"/>
-                            <TextBlock Text="Сохранение..." Foreground="LightGray" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Сохранение..." Foreground="{DynamicResource TextSecondaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                         <Button Content="Назад к списку" Click="BackToProjectList_Click" Height="35" Margin="0,10,0,0"/>
                     </StackPanel>
                 </Grid>
 
-                <Grid x:Name="BatchScreen" Visibility="Collapsed">
+                <Grid x:Name="BatchScreen" Visibility="{Binding IsBatchScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
                     <StackPanel Grid.Row="0" Margin="20">
-                        <TextBlock Text="Очередь задач" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                        <TextBlock x:Name="BatchSummaryText" Text="Всего: 0" Foreground="LightGray" Margin="0,0,0,10"/>
+                        <TextBlock Text="Очередь задач" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <TextBlock x:Name="BatchSummaryText" Text="Всего: 0" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10"/>
                         <ListBox x:Name="BatchJobsListBox" DisplayMemberPath="DisplayName" Height="260"/>
-                        <TextBlock Text="Задачи выполняются через ffmpeg и сохраняют результат в папку Processed." Foreground="LightGray" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                        <TextBlock Text="Задачи выполняются через ffmpeg и сохраняют результат в папку Processed." Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,10,0,0" TextWrapping="Wrap"/>
                     </StackPanel>
 
                     <WrapPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,10,0,20">
@@ -508,7 +425,7 @@
                 </Grid>
 
                 <!-- Добавляем новый Grid для экрана обработки -->
-                <Grid x:Name="ProcessScreen" Visibility="Collapsed">
+                <Grid x:Name="ProcessScreen" Visibility="{Binding IsProcessScreenVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="3*"/> <!-- Плеер -->
                         <ColumnDefinition Width="2*"/> <!-- Настройки -->
@@ -533,9 +450,9 @@
                                 ValueChanged="PreviewSlider_ValueChanged"/>
 
                         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock x:Name="PreviewCurrentTime" Text="00:00" Foreground="White" Margin="5"/>
-                            <TextBlock Text="/" Foreground="White" Margin="5"/>
-                            <TextBlock x:Name="PreviewTotalTime" Text="00:00" Foreground="White" Margin="5"/>
+                            <TextBlock x:Name="PreviewCurrentTime" Text="00:00" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
+                            <TextBlock Text="/" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
+                            <TextBlock x:Name="PreviewTotalTime" Text="00:00" Foreground="{DynamicResource PlayerTextBrush}" Margin="5"/>
                         </StackPanel>
 
                         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
@@ -550,27 +467,27 @@
                         <!-- Ресурсы должны быть объявлены в начале элемента -->
                         <DockPanel.Resources>
                             <Style TargetType="CheckBox">
-                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                                 <Setter Property="Margin" Value="0,0,0,15"/>
                                 <Setter Property="Template">
                                     <Setter.Value>
                                         <ControlTemplate TargetType="CheckBox">
                                             <Grid>
-                                                <Border x:Name="border" Background="#333" CornerRadius="5"
-                                                        BorderThickness="1" BorderBrush="#555" Padding="8,5">
+                                                <Border x:Name="border" Background="{DynamicResource ToggleSurfaceBrush}" CornerRadius="5"
+                                                        BorderThickness="1" BorderBrush="{DynamicResource ToggleSurfaceBorderBrush}" Padding="8,5">
                                                     <ContentPresenter RecognizesAccessKey="True"/>
                                                 </Border>
-                                                <Path x:Name="checkMark" Data="M0,5 L5,10 L12,0" Stroke="White"
+                                                <Path x:Name="checkMark" Data="M0,5 L5,10 L12,0" Stroke="{DynamicResource ToggleCheckMarkBrush}"
                                                       StrokeThickness="2" HorizontalAlignment="Right" Margin="0,0,10,0"
                                                       Visibility="Collapsed"/>
                                             </Grid>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsChecked" Value="True">
                                                     <Setter TargetName="checkMark" Property="Visibility" Value="Visible"/>
-                                                    <Setter TargetName="border" Property="Background" Value="#444"/>
+                                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource ToggleSurfaceCheckedBrush}"/>
                                                 </Trigger>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="border" Property="BorderBrush" Value="#777"/>
+                                                    <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
@@ -580,25 +497,25 @@
                         </DockPanel.Resources>
 
                         <WrapPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
-                            <Button Content="Выполнить" Click="ExecuteProcessing_Click" Height="40" Width="120" Foreground="White"/>
-                            <Button Content="В очередь" Click="AddProcessingToQueue_Click" Height="40" Width="120" Foreground="White" Margin="10,0,0,0"/>
+                            <Button Content="Выполнить" Click="ExecuteProcessing_Click" Height="40" Width="120"/>
+                            <Button Content="В очередь" Click="AddProcessingToQueue_Click" Height="40" Width="120" Margin="10,0,0,0"/>
                         </WrapPanel>
 
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="Формат вывода:" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+                                <TextBlock Text="Формат вывода:" FontWeight="Bold" Margin="0,0,0,10" Foreground="{DynamicResource TextPrimaryBrush}"/>
 
                                 <StackPanel Margin="0,0,0,12">
-                                    <RadioButton x:Name="Mp4RadioButton" Content="MP4" GroupName="OutputFormat" Tag="mp4" Checked="OnOutputFormatChanged" Foreground="White" Margin="0,0,0,5"/>
-                                    <RadioButton x:Name="AviRadioButton" Content="AVI" GroupName="OutputFormat" Tag="avi" Checked="OnOutputFormatChanged" Foreground="White" Margin="0,0,0,5"/>
-                                    <RadioButton x:Name="MkvRadioButton" Content="MKV" GroupName="OutputFormat" Tag="mkv" Checked="OnOutputFormatChanged" Foreground="White"/>
+                                    <RadioButton x:Name="Mp4RadioButton" Content="MP4" GroupName="OutputFormat" Tag="mp4" Checked="OnOutputFormatChanged" Margin="0,0,0,5"/>
+                                    <RadioButton x:Name="AviRadioButton" Content="AVI" GroupName="OutputFormat" Tag="avi" Checked="OnOutputFormatChanged" Margin="0,0,0,5"/>
+                                    <RadioButton x:Name="MkvRadioButton" Content="MKV" GroupName="OutputFormat" Tag="mkv" Checked="OnOutputFormatChanged"/>
                                 </StackPanel>
 
-                                <TextBlock Text="Пресет устройства / соцсети:" FontWeight="Bold" Margin="0,0,0,6" Foreground="White"/>
+                                <TextBlock Text="Пресет устройства / соцсети:" FontWeight="Bold" Margin="0,0,0,6" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <ComboBox x:Name="PresetComboBox" SelectionChanged="PresetComboBox_SelectionChanged" Margin="0,0,0,4"/>
-                                <TextBlock x:Name="PresetDescriptionText" Text="Текущие ручные настройки" Foreground="LightGray" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                <TextBlock x:Name="PresetDescriptionText" Text="Текущие ручные настройки" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,12"/>
 
-                                <TextBlock Text="Название файла:" FontWeight="Bold" Margin="0,0,0,10" Foreground="White"/>
+                                <TextBlock Text="Название файла:" FontWeight="Bold" Margin="0,0,0,10" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <TextBox x:Name="FileNameTextBox" Margin="0,0,0,12"/>
 
                                 <Grid Margin="0,0,0,12">
@@ -607,12 +524,12 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Разрешение" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Разрешение" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <TextBox x:Name="OutputWidthTextBox" Width="70" TextChanged="ProcessingOptionInput_Changed"/>
-                                        <TextBlock Text="x" Foreground="White" Margin="6,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="x" Foreground="{DynamicResource TextPrimaryBrush}" Margin="6,0" VerticalAlignment="Center"/>
                                         <TextBox x:Name="OutputHeightTextBox" Width="70" TextChanged="ProcessingOptionInput_Changed"/>
-                                        <TextBlock x:Name="ResolutionStatusText" Foreground="#FFE9C46A" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="ResolutionStatusText" Foreground="{DynamicResource StatusBrush}" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <Button x:Name="ResolutionResetButton" Grid.Column="2" Content="Сбросить" Click="ResetResolution_Click" Visibility="Collapsed"/>
                                 </Grid>
@@ -623,11 +540,11 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Обрезка" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Обрезка" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <TextBox x:Name="TrimStartTextBox" Width="90" TextChanged="ProcessingOptionInput_Changed"/>
                                         <TextBox x:Name="TrimEndTextBox" Width="90" Margin="8,0,0,0" TextChanged="ProcessingOptionInput_Changed"/>
-                                        <TextBlock x:Name="TrimStatusText" Foreground="#FFE9C46A" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="TrimStatusText" Foreground="{DynamicResource StatusBrush}" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <Button x:Name="TrimResetButton" Grid.Column="2" Content="Сбросить" Click="ResetTrim_Click" Visibility="Collapsed"/>
                                 </Grid>
@@ -638,10 +555,10 @@
                                         <ColumnDefinition Width="*"/>
                                     </Grid.ColumnDefinitions>
                                     <CheckBox x:Name="LosslessCopyCheckBox" Content="Lossless cut / stream copy" Checked="ProcessingOptionToggle_Changed" Unchecked="ProcessingOptionToggle_Changed"/>
-                                    <TextBlock x:Name="LosslessStatusText" Grid.Column="1" Foreground="#FFE9C46A" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="LosslessStatusText" Grid.Column="1" Foreground="{DynamicResource StatusBrush}" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                 </Grid>
 
-                                <TextBlock Text="Аппаратное ускорение:" FontWeight="Bold" Margin="0,0,0,6" Foreground="White"/>
+                                <TextBlock Text="Аппаратное ускорение:" FontWeight="Bold" Margin="0,0,0,6" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                 <ComboBox x:Name="HardwareAccelerationComboBox" Margin="0,0,0,6" SelectionChanged="ProcessingOptionSelection_Changed"/>
                                 <CheckBox x:Name="HardwareDecodeCheckBox" Content="Использовать аппаратное декодирование" Margin="0,0,0,12" Checked="ProcessingOptionToggle_Changed" Unchecked="ProcessingOptionToggle_Changed"/>
 
@@ -651,11 +568,11 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Crop / Scale" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Crop / Scale" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <TextBox x:Name="CropTextBox" Width="110" TextChanged="ProcessingOptionInput_Changed"/>
                                         <TextBox x:Name="ScaleTextBox" Width="110" Margin="8,0,0,0" TextChanged="ProcessingOptionInput_Changed"/>
-                                        <TextBlock x:Name="CropScaleStatusText" Foreground="#FFE9C46A" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="CropScaleStatusText" Foreground="{DynamicResource StatusBrush}" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <Button x:Name="CropScaleResetButton" Grid.Column="2" Content="Сбросить" Click="ResetCropScale_Click" Visibility="Collapsed"/>
                                 </Grid>
@@ -666,10 +583,10 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="VP9 CRF" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock Text="VP9 CRF" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <TextBox x:Name="Vp9CrfTextBox" Width="70" TextChanged="ProcessingOptionInput_Changed"/>
-                                        <TextBlock x:Name="Vp9StatusText" Foreground="#FFE9C46A" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="Vp9StatusText" Foreground="{DynamicResource StatusBrush}" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <Button x:Name="Vp9ResetButton" Grid.Column="2" Content="Сбросить" Click="ResetVp9_Click" Visibility="Collapsed"/>
                                 </Grid>
@@ -680,10 +597,10 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="2-pass bitrate" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock Text="2-pass bitrate" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <TextBox x:Name="TwoPassBitrateTextBox" Width="90" TextChanged="ProcessingOptionInput_Changed"/>
-                                        <TextBlock x:Name="TwoPassStatusText" Foreground="#FFE9C46A" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="TwoPassStatusText" Foreground="{DynamicResource StatusBrush}" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <Button x:Name="TwoPassResetButton" Grid.Column="2" Content="Сбросить" Click="ResetTwoPass_Click" Visibility="Collapsed"/>
                                 </Grid>
@@ -698,10 +615,10 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="FPS" Foreground="White" VerticalAlignment="Center"/>
+                                    <TextBlock Text="FPS" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <TextBox x:Name="FpsTextBox" Width="70" TextChanged="ProcessingOptionInput_Changed"/>
-                                        <TextBlock x:Name="FpsStatusText" Foreground="#FFE9C46A" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="FpsStatusText" Foreground="{DynamicResource StatusBrush}" Margin="10,0,0,0" VerticalAlignment="Center" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <Button x:Name="FpsResetButton" Grid.Column="2" Content="Сбросить" Click="ResetFps_Click" Visibility="Collapsed"/>
                                 </Grid>
@@ -714,13 +631,13 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="80"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="FFmpeg команда" Foreground="White" VerticalAlignment="Top"/>
+                                    <TextBlock Text="FFmpeg команда" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Top"/>
                                     <StackPanel Grid.Column="1">
                                         <TextBox x:Name="CustomCommandTextBox"
                                                  AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
                                                  Height="100" TextChanged="ProcessingOptionInput_Changed"/>
-                                        <TextBlock x:Name="CustomCommandStatusText" Foreground="#FFE9C46A" Margin="0,5,0,0" TextWrapping="Wrap"/>
-                                        <TextBlock Text="Подсказка: {input} заменяется исходным файлом, {output} - выходным." Foreground="LightGray" FontSize="11" Margin="0,5,0,0"/>
+                                        <TextBlock x:Name="CustomCommandStatusText" Foreground="{DynamicResource StatusBrush}" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                        <TextBlock Text="Подсказка: {input} заменяется исходным файлом, {output} - выходным." Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,5,0,0"/>
                                     </StackPanel>
                                     <Button x:Name="CustomCommandResetButton" Grid.Column="2" Content="Сбросить" Click="ResetCustomCommand_Click" Visibility="Collapsed" VerticalAlignment="Top"/>
                                 </Grid>

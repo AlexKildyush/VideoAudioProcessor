@@ -3,7 +3,7 @@ using System.IO;
 using System.Windows;
 using Microsoft.VisualBasic;
 
-namespace VideoAudioProcessor;
+namespace VideoAudioProcessor.View;
 
 public partial class MainWindow
 {
@@ -16,8 +16,7 @@ public partial class MainWindow
 
     private void ShowJobs_Click(object sender, RoutedEventArgs e)
     {
-        HideAllScreens();
-        BatchScreen.Visibility = Visibility.Visible;
+        ShowScreen(ViewModel.AppScreen.Batch);
         RefreshBatchSummary();
     }
 

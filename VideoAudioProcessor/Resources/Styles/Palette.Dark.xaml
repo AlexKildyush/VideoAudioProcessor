@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#FF1E1F22" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#CC2A2C31" />
+    <SolidColorBrush x:Key="SurfaceStrongBrush" Color="#FF26282D" />
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="#FF202226" />
+    <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#FF3A3F46" />
+    <SolidColorBrush x:Key="HoverBrush" Color="#FF2F3947" />
+    <SolidColorBrush x:Key="SelectedBrush" Color="#FF23415F" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#FF4EA1F3" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#FF77B7F6" />
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFF4F7FA" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FFB7C0CB" />
+    <SolidColorBrush x:Key="StatusBrush" Color="#FFF2C14E" />
+    <SolidColorBrush x:Key="InfoOverlayBrush" Color="#B91A1B1F" />
+    <SolidColorBrush x:Key="TimelineSurfaceBrush" Color="#FF23252A" />
+    <SolidColorBrush x:Key="TimelineLaneBrush" Color="#FF1B1D21" />
+    <SolidColorBrush x:Key="TimelineLaneBorderBrush" Color="#FF414853" />
+    <SolidColorBrush x:Key="TimelineEmptyBrush" Color="#FF5B636E" />
+    <SolidColorBrush x:Key="TimelineVideoBrush" Color="#FF3478F6" />
+    <SolidColorBrush x:Key="TimelineImageBrush" Color="#FF8A63E6" />
+    <SolidColorBrush x:Key="TimelineAudioBrush" Color="#FF2FA36B" />
+    <SolidColorBrush x:Key="TimelineSubtitleBrush" Color="#FFD69B2D" />
+    <SolidColorBrush x:Key="TimelineBlockTextBrush" Color="#FFFDFDFD" />
+    <SolidColorBrush x:Key="PlayerTextBrush" Color="#FFF4F7FA" />
+    <SolidColorBrush x:Key="ToggleSurfaceBrush" Color="#FF2A2D32" />
+    <SolidColorBrush x:Key="ToggleSurfaceCheckedBrush" Color="#FF344C67" />
+    <SolidColorBrush x:Key="ToggleSurfaceBorderBrush" Color="#FF4B5563" />
+    <SolidColorBrush x:Key="ToggleCheckMarkBrush" Color="#FFF4F7FA" />
+    <SolidColorBrush x:Key="ComboBoxBackgroundBrush" Color="#FF2B2B2B" />
+    <SolidColorBrush x:Key="ComboBoxBorderBrush" Color="#FF3F3F3F" />
+    <SolidColorBrush x:Key="ComboBoxHoverBrush" Color="#FF323232" />
+    <SolidColorBrush x:Key="ComboBoxPressedBrush" Color="#FF383838" />
+    <SolidColorBrush x:Key="ComboBoxForegroundBrush" Color="#FFFFFFFF" />
+    <SolidColorBrush x:Key="ComboBoxPopupBackgroundBrush" Color="#FF252525" />
+    <SolidColorBrush x:Key="ComboBoxFocusBorderBrush" Color="#FF4CC2FF" />
+</ResourceDictionary>

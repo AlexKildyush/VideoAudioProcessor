@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,7 +8,7 @@ using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using VideoAudioProcessor.Services;
 
-namespace VideoAudioProcessor;
+namespace VideoAudioProcessor.View;
 
 public partial class MainWindow : Window
 {
@@ -40,8 +39,7 @@ public partial class MainWindow : Window
         _currentProjectType = type;
         ProjectListTitle.Text = type == ProjectType.SlideShow ? "Проекты слайдшоу" : "Проекты медиаколлажей";
         RefreshProjectList();
-        HideAllScreens();
-        ProjectListScreen.Visibility = Visibility.Visible;
+        ShowScreen(ViewModel.AppScreen.Projects);
     }
 
     private void RefreshProjectList()
@@ -231,8 +229,7 @@ public partial class MainWindow : Window
         RefreshTimelineList();
         RefreshTimelinePreview();
 
-        HideAllScreens();
-        ProjectEditorScreen.Visibility = Visibility.Visible;
+        ShowScreen(ViewModel.AppScreen.ProjectEditor);
     }
 
     private async void AddVideoFromBase_Click(object sender, RoutedEventArgs e)
