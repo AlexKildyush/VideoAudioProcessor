@@ -175,7 +175,7 @@ public partial class MainWindow : Window
                 return;
             }
 
-            AddProcessingJob(request, $"Обработка {Path.GetFileNameWithoutExtension(request.OutputPath)}");
+            AddProcessingJob(request, $"Обработка: {Path.GetFileNameWithoutExtension(request.OutputPath)}");
             MessageBox.Show("Задача добавлена в очередь.", "Очередь", MessageBoxButton.OK, MessageBoxImage.Information);
         }
         catch (Exception ex)

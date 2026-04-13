@@ -395,7 +395,7 @@
                         </WrapPanel>
 
                         <Button x:Name="SaveProjectButton" Content="Сохранить" Click="SaveProjectVideo_Click" Height="40" Margin="0,20,0,0"/>
-                        <Button Content="В очередь" Click="AddProjectRenderToQueue_Click" Height="38" Margin="0,10,0,0"/>
+                        <Button Content="В задачи" Click="AddProjectRenderToQueue_Click" Height="38" Margin="0,10,0,0"/>
                         <StackPanel x:Name="SaveProgressPanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,8,0,0">
                             <ProgressBar IsIndeterminate="True" Width="120" Height="12"/>
                             <TextBlock Text="Сохранение..." Foreground="{DynamicResource TextSecondaryBrush}" Margin="8,0,0,0" VerticalAlignment="Center"/>
@@ -409,20 +409,19 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <StackPanel Grid.Row="0" Margin="20">
-                        <TextBlock Text="Очередь задач" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
-                        <TextBlock x:Name="BatchSummaryText" Text="Всего: 0" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10"/>
-                        <ListBox x:Name="BatchJobsListBox" Height="260" BorderThickness="0" Background="Transparent">
+                    <Grid Grid.Row="0" Margin="20">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="Очередь задач" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <ListBox Grid.Row="1" x:Name="BatchJobsListBox" BorderThickness="0" Background="Transparent" VerticalAlignment="Stretch">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Border Style="{StaticResource SurfaceCardStyle}" Padding="12" Margin="0,0,0,10">
                                         <StackPanel>
-                                            <DockPanel LastChildFill="False">
-                                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" TextTrimming="CharacterEllipsis" Width="400"/>
-                                                <Border Background="{DynamicResource ToggleSurfaceCheckedBrush}" CornerRadius="10" Padding="8,2" HorizontalAlignment="Right">
-                                                    <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                                </Border>
-                                            </DockPanel>
+                                            <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontWeight="Bold" TextTrimming="CharacterEllipsis" Width="400"/>
                                             <TextBlock Text="{Binding StageText}" Foreground="{DynamicResource StatusBrush}" Margin="0,8,0,0"/>
                                             <ProgressBar Value="{Binding ProgressValue, Mode=OneWay}" Maximum="100" Height="10" Margin="0,8,0,0"/>
                                             <DockPanel Margin="0,8,0,0">
@@ -447,7 +446,7 @@
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                    </StackPanel>
+                    </Grid>
 
                     <WrapPanel Grid.Row="1" HorizontalAlignment="Center" Margin="0,10,0,20">
                         <Button Content="Запустить все" Click="RunAllJobs_Click" Width="140" Height="38"/>
@@ -531,7 +530,7 @@
 
                         <WrapPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
                             <Button Content="Выполнить" Click="ExecuteProcessing_Click" Height="40" Width="120"/>
-                            <Button Content="В очередь" Click="AddProcessingToQueue_Click" Height="40" Width="120" Margin="10,0,0,0"/>
+                            <Button Content="В задачи" Click="AddProcessingToQueue_Click" Height="40" Width="120" Margin="10,0,0,0"/>
                         </WrapPanel>
 
                         <ScrollViewer VerticalScrollBarVisibility="Auto">

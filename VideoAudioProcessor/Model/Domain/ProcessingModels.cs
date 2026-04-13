@@ -232,7 +232,7 @@ public sealed class ProcessingJob : INotifyPropertyChanged
             : value.ToString(@"mm\:ss");
     }
 
-    private void SetProperty<T>(ref T field, T value, params string[] additionalPropertyNames)
+    private void SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = "", params string[] additionalPropertyNames)
     {
         if (EqualityComparer<T>.Default.Equals(field, value))
         {
@@ -240,10 +240,10 @@ public sealed class ProcessingJob : INotifyPropertyChanged
         }
 
         field = value;
-        OnPropertyChanged();
-        foreach (var propertyName in additionalPropertyNames)
+        OnPropertyChanged(propertyName);
+        foreach (var additionalPropertyName in additionalPropertyNames)
         {
-            OnPropertyChanged(propertyName);
+            OnPropertyChanged(additionalPropertyName);
         }
     }
 

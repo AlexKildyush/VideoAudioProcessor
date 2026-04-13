@@ -17,21 +17,12 @@ public partial class MainWindow
     private void ShowJobs_Click(object sender, RoutedEventArgs e)
     {
         ShowScreen(ViewModel.AppScreen.Batch);
-        RefreshBatchSummary();
-    }
-
-    private void RefreshBatchSummary()
-    {
-        var pending = _processingJobs.Count(job => job.Status == BatchJobStatus.Pending);
-        var running = _processingJobs.Count(job => job.Status == BatchJobStatus.Running);
-        var failed = _processingJobs.Count(job => job.Status == BatchJobStatus.Failed);
-        BatchSummaryText.Text = $"Всего: {_processingJobs.Count} | Ожидают: {pending} | Выполняются: {running} | Ошибки: {failed}";
     }
 
     private void AddProcessingJob(ProcessingRequest request, string jobName)
     {
-        _processingJobs.Add(CreateBatchQueueRunner().CreateJob(request, jobName));
-        RefreshBatchSummary();
+        var job = CreateBatchQueueRunner().CreateJob(request, jobName);
+        _processingJobs.Add(job);
     }
 
     private async void RunAllJobs_Click(object sender, RoutedEventArgs e)
@@ -41,8 +32,6 @@ public partial class MainWindow
         {
             await RunJobAsync(job, runner);
         }
-
-        RefreshBatchSummary();
     }
 
     private async void RunSelectedJob_Click(object sender, RoutedEventArgs e)
@@ -53,7 +42,6 @@ public partial class MainWindow
         }
 
         await RunJobAsync(job, CreateBatchQueueRunner());
-        RefreshBatchSummary();
     }
 
     private void RemoveSelectedJob_Click(object sender, RoutedEventArgs e)
@@ -64,7 +52,6 @@ public partial class MainWindow
         }
 
         _processingJobs.Remove(job);
-        RefreshBatchSummary();
     }
 
     private void ClearCompletedJobs_Click(object sender, RoutedEventArgs e)
@@ -73,8 +60,6 @@ public partial class MainWindow
         {
             _processingJobs.Remove(job);
         }
-
-        RefreshBatchSummary();
     }
 
     private async Task RunJobAsync(ProcessingJob job, Services.BatchQueueRunner runner)
@@ -85,7 +70,6 @@ public partial class MainWindow
         }
 
         BatchJobsListBox.Items.Refresh();
-        RefreshBatchSummary();
 
         await runner.RunJobAsync(job);
 
@@ -99,24 +83,23 @@ public partial class MainWindow
         }
         else if (job.Status == BatchJobStatus.Failed && !string.IsNullOrWhiteSpace(job.LastError))
         {
-            MessageBox.Show($"Ошибка задачи '{job.Name}': {job.LastError}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"РћС€РёР±РєР° Р·Р°РґР°С‡Рё '{job.Name}': {job.LastError}", "РћС€РёР±РєР°", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         BatchJobsListBox.Items.Refresh();
-        RefreshBatchSummary();
     }
 
     private async void LosslessMergeSelectedFiles_Click(object sender, RoutedEventArgs e)
     {
         if (FilesListBox.SelectedItems.Count < 2)
         {
-            MessageBox.Show("Выберите минимум два файла в очереди для merge.");
+            MessageBox.Show("Р’С‹Р±РµСЂРёС‚Рµ РјРёРЅРёРјСѓРј РґРІР° С„Р°Р№Р»Р° РІ РѕС‡РµСЂРµРґРё РґР»СЏ merge.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(RootPath))
         {
-            MessageBox.Show("Сначала укажите корневую папку.");
+            MessageBox.Show("РЎРЅР°С‡Р°Р»Р° СѓРєР°Р¶РёС‚Рµ РєРѕСЂРЅРµРІСѓСЋ РїР°РїРєСѓ.");
             return;
         }
 
@@ -126,7 +109,7 @@ public partial class MainWindow
             .ToList();
 
         var extension = Path.GetExtension(selectedPaths[0]);
-        var outputName = Interaction.InputBox("Введите имя итогового файла без расширения", "Lossless merge", $"merged_{DateTime.Now:yyyyMMdd_HHmmss}");
+        var outputName = Interaction.InputBox("Р’РІРµРґРёС‚Рµ РёРјСЏ РёС‚РѕРіРѕРІРѕРіРѕ С„Р°Р№Р»Р° Р±РµР· СЂР°СЃС€РёСЂРµРЅРёСЏ", "Lossless merge", $"merged_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (string.IsNullOrWhiteSpace(outputName))
         {
             return;
@@ -137,14 +120,14 @@ public partial class MainWindow
         var outputPath = Path.Combine(ProcessedPath, $"{outputName.Trim()}{extension}");
         if (File.Exists(outputPath))
         {
-            MessageBox.Show("Файл с таким именем уже существует.");
+            MessageBox.Show("Р¤Р°Р№Р» СЃ С‚Р°РєРёРј РёРјРµРЅРµРј СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚.");
             return;
         }
 
         ProcessingRequest request;
         try
         {
-            request = BuildLosslessMergeRequest(selectedPaths, outputPath) ?? throw new InvalidOperationException("Не удалось создать merge-задачу.");
+            request = BuildLosslessMergeRequest(selectedPaths, outputPath) ?? throw new InvalidOperationException("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ merge-Р·Р°РґР°С‡Сѓ.");
         }
         catch (Exception ex)
         {
@@ -152,7 +135,7 @@ public partial class MainWindow
             return;
         }
 
-        var result = MessageBox.Show("Добавить merge в очередь задач? Нажмите 'Нет' для немедленного запуска.", "Lossless merge", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+        var result = MessageBox.Show("Р”РѕР±Р°РІРёС‚СЊ merge РІ РѕС‡РµСЂРµРґСЊ Р·Р°РґР°С‡? РќР°Р¶РјРёС‚Рµ 'РќРµС‚' РґР»СЏ РЅРµРјРµРґР»РµРЅРЅРѕРіРѕ Р·Р°РїСѓСЃРєР°.", "Lossless merge", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
         if (result == MessageBoxResult.Cancel)
         {
             return;
@@ -161,7 +144,7 @@ public partial class MainWindow
         if (result == MessageBoxResult.Yes)
         {
             AddProcessingJob(request, "Lossless merge");
-            MessageBox.Show("Задача добавлена в очередь.");
+            MessageBox.Show("Р—Р°РґР°С‡Р° РґРѕР±Р°РІР»РµРЅР° РІ РѕС‡РµСЂРµРґСЊ.");
             return;
         }
 
@@ -176,15 +159,15 @@ public partial class MainWindow
 
             if (job.Status != BatchJobStatus.Completed)
             {
-                throw new InvalidOperationException(job.LastError ?? "Не удалось выполнить merge.");
+                throw new InvalidOperationException(job.LastError ?? "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹РїРѕР»РЅРёС‚СЊ merge.");
             }
 
             RefreshProcessedList();
-            MessageBox.Show("Файлы успешно объединены.");
+            MessageBox.Show("Р¤Р°Р№Р»С‹ СѓСЃРїРµС€РЅРѕ РѕР±СЉРµРґРёРЅРµРЅС‹.");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Ошибка ffmpeg: {ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"РћС€РёР±РєР° ffmpeg: {ex.Message}", "РћС€РёР±РєР°", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }
